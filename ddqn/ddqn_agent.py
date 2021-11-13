@@ -30,19 +30,21 @@ class DDQNAgent:
             hyperparams = json.load(f)
             return hyperparams
 
-    def act(self, obs) -> int:
-        selectable_options = map(lambda o: o.check_in_initiation_set(obs), self.option_repertoire)
+    def act(self, obs):
+        selectable_options = map(lambda o: o.initiation_classifier.check(obs), self.option_repertoire)
         selectable_indexes = np.argwhere(selectable_options)
 
         if np.random.rand() < self.eps:
-            return np.random.choice(selectable_indexes)
+            selected_index = np.random.choice(selectable_indexes)
         else:
             with torch.no_grad():
                 obs = torch.from_numpy(obs)
                 action_values = self.Q_network(obs).numpy()
                 action_values[selectable_indexes] = -np.inf
-    
-                return action_values.argmax()
+
+                selected_index = action_values.argmax()
+
+        return self.option_repertoire[selected_index]
 
     def step(self, obs, action, reward, next_obs, done) -> None:
         self.memory.store_transition(obs, action, reward, next_obs, done)
@@ -64,7 +66,7 @@ class DDQNAgent:
         Q_current = self.Q_network(observations).gather(1, actions)
 
         with torch.no_grad():
-            a = self.Q_network(next_observations).argmax(1).unsqueeze(1)
+            a = self.Q_network(next_observations).argmax(1)
             Q_target_next = self.target_network(next_observations).gather(1, a)
             Q_target = rewards + self.hyperparams['gamma'] * Q_target_next * (1 - dones)
 

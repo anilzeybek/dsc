@@ -16,8 +16,8 @@ def main() -> None:
     hyperparams = read_hyperparams()
     env = gym.make("Point4Rooms-v1")
 
-    global_option = Option(budget=1)
-    goal_option = Option(hyperparams['budget'])
+    global_option = Option(budget=1, env=env, parent=None)
+    goal_option = Option(hyperparams['budget'], env=env, parent=None)
 
     option_repertoire = [global_option]
     untrained_option = goal_option
@@ -28,6 +28,7 @@ def main() -> None:
     done = False
     while not done:
         selected_option = agent_over_options.act(obs)
+        rewards, obs = selected_option.execute(obs)
 
 
 if __name__ == "__main__":

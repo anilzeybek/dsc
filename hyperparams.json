@@ -12,5 +12,19 @@
         "eps_decay": 0.995,
         "hidden_1": 64,
         "hidden_2": 64
+    },
+    "local_agent": {
+        "lr_actor": 1e-3,
+        "lr_critic": 1e-3,
+        "buffer_size": 200000,
+        "batch_size": 64,
+        "gamma": 0.99,
+        "polyak": 0.995,
+        "start_steps": 25000,
+        "update_every": 10,
+        "update_after": 1000,
+        "act_noise": 0.1,
+        "hidden_1": 400,
+        "hidden_2": 300
     }
 }
