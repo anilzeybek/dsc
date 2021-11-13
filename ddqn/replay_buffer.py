@@ -5,11 +5,11 @@ import torch
 
 
 class ReplayBuffer:
-    def __init__(self, buffer_size):
+    def __init__(self, buffer_size) -> None:
         self.memory = deque(maxlen=buffer_size)
         self.experience = namedtuple("Experience", field_names=["obs", "action", "reward", "next_obs", "done"])
 
-    def store_transition(self, obs, action, reward, next_obs, done):
+    def store_transition(self, obs, action, reward, next_obs, done) -> None:
         e = self.experience(obs, action, reward, next_obs, done)
         self.memory.append(e)
 
@@ -24,5 +24,5 @@ class ReplayBuffer:
 
         return observations, actions, rewards, next_observations, dones
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.memory)

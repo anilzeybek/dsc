@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 
 class QNetwork(nn.Module):
-    def __init__(self, obs_size, action_size, hidden_1, hidden_2):
+    def __init__(self, obs_size, action_size, hidden_1, hidden_2) -> None:
         super(QNetwork, self).__init__()
 
         self.fc1 = nn.Linear(obs_size, hidden_1)

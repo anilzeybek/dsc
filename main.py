@@ -22,12 +22,12 @@ def main() -> None:
     option_repertoire = [global_option]
     untrained_option = goal_option
 
-    agent_over_options = DDQNAgent(obs_size=env.observation_space.shape[0], action_size=1)
+    agent_over_options = DDQNAgent(obs_size=env.observation_space.shape[0], option_repertoire=option_repertoire)
 
     obs = env.reset()
     done = False
     while not done:
-        pass
+        selected_option = agent_over_options.act(obs)
 
 
 if __name__ == "__main__":
