@@ -3,10 +3,10 @@ import torch.nn.functional as F
 
 
 class QNetwork(nn.Module):
-    def __init__(self, state_size, action_size, hidden_1, hidden_2):
+    def __init__(self, obs_size, action_size, hidden_1, hidden_2):
         super(QNetwork, self).__init__()
 
-        self.fc1 = nn.Linear(state_size, hidden_1)
+        self.fc1 = nn.Linear(obs_size, hidden_1)
         self.fc2 = nn.Linear(hidden_1, hidden_2)
         self.fc3 = nn.Linear(hidden_2, action_size)
 
