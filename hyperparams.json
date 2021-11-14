@@ -1,5 +1,7 @@
 {
     "budget": 20,
+    "N": 3,
+    "K": 20,
     "agent_over_actions": {
         "lr": 1e-3,
         "buffer_size": 100000,

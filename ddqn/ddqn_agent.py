@@ -4,6 +4,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+
+from option import Option
 from .model import QNetwork
 from .replay_buffer import ReplayBuffer
 from copy import deepcopy
@@ -30,7 +32,7 @@ class DDQNAgent:
             hyperparams = json.load(f)
             return hyperparams
 
-    def act(self, obs):
+    def act(self, obs) -> Option:
         selectable_options = map(lambda o: o.initiation_classifier.check(obs), self.option_repertoire)
         selectable_indexes = np.argwhere(selectable_options)
 
@@ -46,8 +48,8 @@ class DDQNAgent:
 
         return self.option_repertoire[selected_index]
 
-    def step(self, obs, action, reward, next_obs, done) -> None:
-        self.memory.store_transition(obs, action, reward, next_obs, done)
+    def step(self, obs, action, reward_list, next_obs, done) -> None:
+        self.memory.store_transition(obs, action, reward_list, next_obs, done)
 
         self.t_step = (self.t_step + 1) % self.hyperparams['update_every']
         if self.t_step == 0 and len(self.memory) > self.hyperparams['batch_size']:
@@ -61,14 +63,19 @@ class DDQNAgent:
         self.eps = max(self.hyperparams['eps_end'], self.hyperparams['eps_decay'] * self.eps)
 
     def _learn(self, experiences) -> None:
-        observations, actions, rewards, next_observations, dones = experiences
+        observations, actions, rewards_lists, next_observations, dones = experiences
+        # TODO: rewards_lists definetly wrong
 
         Q_current = self.Q_network(observations).gather(1, actions)
-
         with torch.no_grad():
             a = self.Q_network(next_observations).argmax(1)
             Q_target_next = self.target_network(next_observations).gather(1, a)
-            Q_target = rewards + self.hyperparams['gamma'] * Q_target_next * (1 - dones)
+
+            discounted_reward = 0
+            for i in range(len(rewards_lists)):
+                discounted_reward += (self.hyperparams['gamma'] ** i) * rewards_lists[i]
+
+            Q_target = discounted_reward + (self.hyperparams['gamma'] ** len(rewards_lists)) * Q_target_next * (1 - dones)
 
         loss = F.mse_loss(Q_current, Q_target)
 
