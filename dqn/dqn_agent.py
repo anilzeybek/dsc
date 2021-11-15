@@ -31,7 +31,7 @@ class DQNAgent:
         new_Q_network = QNetwork(self.obs_size, len(self.option_repertoire), self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
         new_Q_network.load_state_dict(self.Q_network.state_dict())
         new_Q_network.change_last_layer(len(self.option_repertoire))
-        # TODO: assign appropriate initial values for new layer
+        # TODO: (LATER) assign appropriate initial values for new layer
 
     def _read_hyperparams(self) -> Dict[str, Any]:
         with open('hyperparams.json') as f:

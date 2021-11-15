@@ -24,8 +24,7 @@ class Option:
         if parent_option:
             assert parent_option.initiation_classifier_created
 
-            self.termination_classifier = parent_option.initiation_classifier
-            # TODO: böylece type değiştiremeyiz, parent'ınki de değişir, ama deepcopy de olmaz çünkü parent init değişirse self term de değişsin istiyoruz
+            self.termination_classifier = deepcopy(parent_option.initiation_classifier)
             self.termination_classifier.type_ = "termination"
         else:
             # This means self is either goal or global option
@@ -41,8 +40,8 @@ class Option:
             self.initiation_classifier_refined = True
 
         self.successful_observations_to_create_initiation_classifier = []
-        self.good_example_to_refine = None
-        self.bad_example_to_refine = None
+        self.good_examples_to_refine = []
+        self.bad_examples_to_refine = []
         self.refine_count = 0
 
     def execute(self, obs):
@@ -69,12 +68,13 @@ class Option:
         # those successful_observations are not for self, it is for option_without_initiation_classifier
         successful_observations = None
         if local_done:
-            self.good_example_to_refine = starting_obs
+            self.good_examples_to_refine.append(starting_obs)
             successful_observations = self.agent.replay_buffer.memory[-self.K-2:-self.K+2]
         else:
-            self.bad_example_to_refine = starting_obs
+            self.bad_examples_to_refine.append(starting_obs)
 
-        self.refine_inititation_classifier()
+        if not self.initiation_classifier_refined and len(self.good_examples_to_refine) > self.max_refine:
+            self.refine_inititation_classifier()
         return obs, reward_list, done, successful_observations
 
     def create_initiation_classifier(self, successful_observations) -> None:
@@ -89,9 +89,8 @@ class Option:
 
     def refine_inititation_classifier(self):
         assert self.initiation_classifier_created
-        if not self.initiation_classifier_refined:
-            # TODO: use self.good_example_to_refine and self.bad_example_to_refine
+        assert not self.initiation_classifier_refined
 
-            self.refine_count += 1
-            if self.refine_count == self.max_refine:
-                self.initiation_classifier_refined = True
+        if not self.initiation_classifier_refined:
+            self.initiation_classifier.train_two_class(self.good_examples_to_refine, self.bad_examples_to_refine)
+            self.initiation_classifier_refined = True
