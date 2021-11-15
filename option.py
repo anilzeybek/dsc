@@ -20,18 +20,22 @@ class Option:
         if self.this_is_global_option or self.this_is_goal_option:
             assert parent_option is None
 
-        self.agent = DDPGAgent()
+        # TODO: act limits check
+        self.agent = DDPGAgent(self.env.observation_space.shape[0], self.env.action_space.shape[0], 1)
         if parent_option:
             assert parent_option.initiation_classifier_created
 
             self.termination_classifier = deepcopy(parent_option.initiation_classifier)
             self.termination_classifier.type_ = "termination"
+
+            self.initiation_classifier = Classifier(type_="initiation")
         else:
             # This means self is either goal or global option
+            # TODO: env_term_checker should be env._task.termination
             self.termination_classifier = Classifier(type_="termination", for_global_option=self.this_is_global_option,
-                                                     for_goal_option=self.this_is_goal_option, env_termination_checker=env._task.termination)
+                                                     for_goal_option=self.this_is_goal_option, env_termination_checker=lambda x: True)
 
-        self.initiation_classifier = Classifier(type_="initiation")
+            self.initiation_classifier = Classifier(type_="initiation", for_global_option=self.this_is_global_option, for_goal_option=self.this_is_goal_option)
         self.initiation_classifier_created = False
         self.initiation_classifier_refined = False
 
@@ -47,7 +51,6 @@ class Option:
     def execute(self, obs):
         assert self.initiation_classifier_created
 
-        # TODO: check if the self.env is same across everywhere
         starting_obs = deepcopy(obs)
         t = 0
         reward_list = []

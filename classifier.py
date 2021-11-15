@@ -20,9 +20,9 @@ class Classifier:
         self.two_class_trained = False
 
         # if self is goal or global option, termination checker should be provided
-        if self.for_global_option or self.for_goal_option:
+        if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
             assert self.env_termination_checker is not None
-        else:
+        elif self.type_ == "termination":
             assert self.env_termination_checker is None
 
     def check(self, x) -> bool:

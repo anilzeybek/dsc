@@ -21,7 +21,7 @@ def initial_state_covered(initial_state, option_repertoire):
 
 def main() -> None:
     hyperparams = read_hyperparams()
-    env = gym.make("Point4Rooms-v1")
+    env = gym.make("PointUMaze-v1")
     initial_state = env.reset()
 
     global_option = Option(budget=1, env=env, this_is_global_option=True, this_is_goal_option=False, parent_option=None, max_refine=hyperparams['max_refine'], N=hyperparams['N'], K=hyperparams['K'])
@@ -31,12 +31,12 @@ def main() -> None:
     option_repertoire = [global_option]
     option_without_initiation_classifier = goal_option
 
-    agent_over_options = DQNAgent(obs_size=env.observation_space.shape[0], option_repertoire=deepcopy(option_repertoire))
+    agent_over_options = DQNAgent(obs_size=env.observation_space.shape[0], action_size=len(option_repertoire))
 
     obs = env.reset()
     done = False
     while not done:
-        selected_option = agent_over_options.act(obs)
+        selected_option = agent_over_options.act(obs, option_repertoire)
         next_obs, reward_list, done, successful_observations = selected_option.execute(obs)
         agent_over_options.step(obs, selected_option, reward_list, next_obs, done)
 
@@ -45,7 +45,7 @@ def main() -> None:
             option_without_initiation_classifier.create_initiation_classifier(successful_observations)
             if option_without_initiation_classifier.initiation_classifier_refined:
                 option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor_network, global_option.agent.critic_network)
-                agent_over_options.add_option(option_without_initiation_classifier)
+                agent_over_options.add_option()
                 option_repertoire.append(option_without_initiation_classifier)
                 option_without_initiation_classifier = Option(hyperparams['budget'], env=env, parent_option=option_without_initiation_classifier,
                                                               max_refine=hyperparams['max_refine'], N=hyperparams['N'], K=hyperparams['K'])

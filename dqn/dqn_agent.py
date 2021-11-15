@@ -12,12 +12,12 @@ from copy import deepcopy
 
 
 class DQNAgent:
-    def __init__(self, obs_size, option_repertoire: List[Option]) -> None:
+    def __init__(self, obs_size, action_size) -> None:
         self.obs_size = obs_size
-        self.option_repertoire = option_repertoire
+        self.action_size = action_size
         self.hyperparams = self._read_hyperparams()['agent_over_actions']
 
-        self.Q_network = QNetwork(self.obs_size, len(self.option_repertoire), self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
+        self.Q_network = QNetwork(self.obs_size, self.action_size, self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
         self.target_network = deepcopy(self.Q_network)
         self.optimizer = optim.Adam(self.Q_network.parameters(), lr=self.hyperparams['lr'])
 
@@ -26,11 +26,11 @@ class DQNAgent:
         self.t_step = 0
         self.learn_count = 0
 
-    def add_option(self, option):
-        self.option_repertoire.append(option)
-        new_Q_network = QNetwork(self.obs_size, len(self.option_repertoire), self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
+    def add_option(self):
+        self.action_size += 1
+        new_Q_network = QNetwork(self.obs_size, self.action_size, self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
         new_Q_network.load_state_dict(self.Q_network.state_dict())
-        new_Q_network.change_last_layer(len(self.option_repertoire))
+        new_Q_network.change_last_layer(self.action_size)
         # TODO: (LATER) assign appropriate initial values for new layer
 
     def _read_hyperparams(self) -> Dict[str, Any]:
@@ -38,9 +38,11 @@ class DQNAgent:
             hyperparams = json.load(f)
             return hyperparams
 
-    def act(self, obs) -> Option:
-        selectable_options = map(lambda o: o.initiation_classifier.check(obs), self.option_repertoire)
-        selectable_indexes = np.argwhere(selectable_options)
+    def act(self, obs, option_repertoire) -> int:
+        selectable_indexes = []
+        for i, o in enumerate(option_repertoire):
+            if o.initiation_classifier.check(obs):
+                selectable_indexes.append(i)
 
         if np.random.rand() < self.eps:
             selected_index = np.random.choice(selectable_indexes)
@@ -52,7 +54,7 @@ class DQNAgent:
 
                 selected_index = action_values.argmax()
 
-        return self.option_repertoire[selected_index]
+        return option_repertoire[selected_index]
 
     def step(self, obs, action, reward_list, next_obs, done) -> None:
         self.memory.store_transition(obs, action, reward_list, next_obs, done)
