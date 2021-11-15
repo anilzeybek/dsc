@@ -11,7 +11,7 @@ from .replay_buffer import ReplayBuffer
 from copy import deepcopy
 
 
-class DDQNAgent:
+class DQNAgent:
     def __init__(self, obs_size, option_repertoire) -> None:
         self.obs_size = obs_size
         self.action_size = len(option_repertoire)

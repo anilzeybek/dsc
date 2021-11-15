@@ -56,6 +56,13 @@ class DDPGAgent:
                 batch = self.replay_buffer.sample(self.hyperparams["batch_size"])
                 self._learn(data=batch)
 
+    def load_global_weights(self, global_actor_network, global_critic_network):
+        self.actor_network.load_state_dict(global_actor_network.state_dict())
+        self.actor_target = deepcopy(self.actor_network)
+
+        self.critic_network.load_state_dict(global_critic_network.state_dict())
+        self.critic_target = deepcopy(self.critic_network)
+
     def _compute_loss_q(self, data):
         obs, action, reward, next_obs, done = data
         Q_current = self.critic_network(obs, action)
