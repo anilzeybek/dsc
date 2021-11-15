@@ -13,7 +13,7 @@ class DDPGAgent:
         self.obs_dim = obs_dim
         self.act_dim = act_dim
         self.act_limits = act_limits
-        self.hyperparams = self.read_hyperparams()['local_agent']
+        self.hyperparams = self._read_hyperparams()['local_agent']
         self.t = 0
 
         self.actor_network = PolicyNetwork(obs_dim, act_dim, act_limits, self.hyperparams["hidden_1"], self.hyperparams["hidden_2"])
@@ -33,7 +33,7 @@ class DDPGAgent:
         self.actor_optimizer = optim.Adam(self.actor_network.parameters(), lr=self.hyperparams["lr_actor"])
         self.critic_optimizer = optim.Adam(self.critic_network.parameters(), lr=self.hyperparams["lr_critic"])
 
-    def read_hyperparams(self) -> Dict[str, Any]:
+    def _read_hyperparams(self) -> Dict[str, Any]:
         with open('hyperparams.json') as f:
             hyperparams = json.load(f)
             return hyperparams
