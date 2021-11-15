@@ -1,3 +1,4 @@
+from copy import deepcopy
 from ddpg.ddpg_agent import DDPGAgent
 from classifier import Classifier
 
@@ -40,12 +41,15 @@ class Option:
             self.initiation_classifier_refined = True
 
         self.successful_observations_to_create_initiation_classifier = []
+        self.good_example_to_refine = None
+        self.bad_example_to_refine = None
         self.refine_count = 0
 
     def execute(self, obs):
         assert self.initiation_classifier_created
 
         # TODO: check if the self.env is same across everywhere
+        starting_obs = deepcopy(obs)
         t = 0
         reward_list = []
 
@@ -65,24 +69,28 @@ class Option:
         # those successful_observations are not for self, it is for option_without_initiation_classifier
         successful_observations = None
         if local_done:
+            self.good_example_to_refine = starting_obs
             successful_observations = self.agent.replay_buffer.memory[-self.K-2:-self.K+2]
+        else:
+            self.bad_example_to_refine = starting_obs
 
+        self.refine_inititation_classifier()
         return obs, reward_list, done, successful_observations
 
     def create_initiation_classifier(self, successful_observations) -> None:
+        # there shouldn't be any actions for initiation classifier if we call this function
         assert not self.initiation_classifier_created
+        assert not self.initiation_classifier_refined
 
         self.successful_observations_to_create_initiation_classifier.append(successful_observations)
         if len(self.successful_observations_to_create_initiation_classifier) == self.N:
             self.initiation_classifier.train_one_class(self.successful_observations_to_create_initiation_classifier)
             self.initiation_classifier_created = True
 
-    def refine_inititation_classifier(self, positive_examples, negative_examples):
+    def refine_inititation_classifier(self):
         assert self.initiation_classifier_created
-
-        # TODO: this class should called by self
         if not self.initiation_classifier_refined:
-            # TODO:
+            # TODO: use self.good_example_to_refine and self.bad_example_to_refine
 
             self.refine_count += 1
             if self.refine_count == self.max_refine:
