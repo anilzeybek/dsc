@@ -1,111 +1,111 @@
-from typing import Any, Dict
-import numpy as np
 import torch
-import torch.optim as optim
 import json
-from .model import QNetwork, PolicyNetwork
-from .replay_buffer import ReplayBuffer
+import numpy as np
+from torch.optim import Adam
+from .models import Actor, Critic
+from .memory import Memory
 from copy import deepcopy
 
 
 class DDPGAgent:
-    def __init__(self, obs_dim, act_dim, act_limits):
-        self.obs_dim = obs_dim
-        self.act_dim = act_dim
-        self.act_limits = act_limits
+    def __init__(self, state_dim, action_dim, goal_dim, action_bounds, compute_reward_func):
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.goal_dim = goal_dim
+        self.action_bounds = action_bounds
+        self.compute_reward_func = compute_reward_func
+
         self.hyperparams = self._read_hyperparams()['local_agent']
-        self.t = 0
 
-        self.actor_network = PolicyNetwork(obs_dim, act_dim, act_limits, self.hyperparams["hidden_1"], self.hyperparams["hidden_2"])
-        self.actor_target = deepcopy(self.actor_network)
+        self.k_future = self.hyperparams['k_future']
 
-        self.critic_network = QNetwork(obs_dim, act_dim, self.hyperparams["hidden_1"], self.hyperparams["hidden_2"])
-        self.critic_target = deepcopy(self.critic_network)
+        self.actor = Actor(self.state_dim, action_dim=self.action_dim, goal_dim=self.goal_dim, action_bounds=self.action_bounds)
+        self.critic = Critic(self.state_dim, action_size=self.action_dim, goal_dim=self.goal_dim)
+        self.actor_target = deepcopy(self.actor)
+        self.critic_target = deepcopy(self.critic)
+        self.tau = self.hyperparams['tau']
+        self.gamma = self.hyperparams['gamma']
 
-        for p in self.actor_target.parameters():
-            p.requires_grad = False
+        self.capacity = self.hyperparams['buffer_size']
+        self.memory = Memory(self.capacity, self.k_future, self.compute_reward_func)
 
-        for p in self.critic_target.parameters():
-            p.requires_grad = False
+        self.batch_size = self.hyperparams['batch_size']
+        self.actor_lr = self.hyperparams['actor_lr']
+        self.critic_lr = self.hyperparams['critic_lr']
+        self.actor_optimizer = Adam(self.actor.parameters(), self.actor_lr)
+        self.critic_optimizer = Adam(self.critic.parameters(), self.critic_lr)
 
-        self.replay_buffer = ReplayBuffer(self.hyperparams["buffer_size"])
-
-        self.actor_optimizer = optim.Adam(self.actor_network.parameters(), lr=self.hyperparams["lr_actor"])
-        self.critic_optimizer = optim.Adam(self.critic_network.parameters(), lr=self.hyperparams["lr_critic"])
-
-    def _read_hyperparams(self) -> Dict[str, Any]:
+    def _read_hyperparams(self):
         with open('hyperparams.json') as f:
             hyperparams = json.load(f)
             return hyperparams
 
-    def act(self, obs, noise=0.1):
-        if self.t > self.hyperparams["start_steps"]:
-            with torch.no_grad():
-                a = self.actor_network(torch.as_tensor(obs, dtype=torch.float32)).numpy()
-                a += noise * np.random.randn(self.act_dim)
-                return np.clip(a, -self.act_limits, self.act_limits)
-        else:
-            return np.random.uniform(low=-self.act_limits, high=self.act_limits, size=(self.act_dim,))
-
-    def step(self, obs, action, reward, next_obs, done):
-        self.t += 1
-        self.replay_buffer.store_transition(obs, action, reward, next_obs, done)
-
-        if self.t >= self.hyperparams["update_after"] and self.t % self.hyperparams["update_every"] == 0:
-            for _ in range(self.hyperparams["update_every"]):
-                batch = self.replay_buffer.sample(self.hyperparams["batch_size"])
-                self._learn(data=batch)
-
-    def load_global_weights(self, global_actor_network, global_critic_network):
-        self.actor_network.load_state_dict(global_actor_network.state_dict())
-        self.actor_target = deepcopy(self.actor_network)
-
-        self.critic_network.load_state_dict(global_critic_network.state_dict())
-        self.critic_target = deepcopy(self.critic_network)
-
-    def _compute_loss_q(self, data):
-        obs, action, reward, next_obs, done = data
-        Q_current = self.critic_network(obs, action)
+    def act(self, state, goal, train_mode=True):
+        state = np.expand_dims(state, axis=0)
+        goal = np.expand_dims(goal, axis=0)
 
         with torch.no_grad():
-            Q_target_next = self.critic_target(next_obs, self.actor_target(next_obs))
-            Q_target = reward + self.hyperparams["gamma"] * Q_target_next * (1 - done)
+            x = np.concatenate([state, goal], axis=1)
+            x = torch.from_numpy(x).float()
+            action = self.actor(x)[0].numpy()
 
-        loss = ((Q_current - Q_target) ** 2).mean()
-        return loss
+        if train_mode:
+            action += self.action_bounds[1] / 5 * np.random.randn(self.action_dim)
+            action = np.clip(action, self.action_bounds[0], self.action_bounds[1])
 
-    def _compute_loss_pi(self, data):
-        obs = data[0]
-        Q = self.critic_network(obs, self.actor_network(obs))
+            random_actions = np.random.uniform(low=self.action_bounds[0], high=self.action_bounds[1],
+                                               size=self.action_dim)
+            action += np.random.binomial(1, 0.3, 1)[0] * (random_actions - action)
 
-        return -Q.mean()
+        return action
 
-    def _learn(self, data):
-        self.critic_optimizer.zero_grad()
-        loss_Q = self._compute_loss_q(data)
-        loss_Q.backward()
-        self.critic_optimizer.step()
+    def store(self, episode_dict):
+        self.memory.add(episode_dict)
 
-        # Freeze Q-network so you don't waste computational effort
-        # computing gradients for it during the policy learning step.
-        for p in self.critic_network.parameters():
-            p.requires_grad = False
+    @staticmethod
+    def soft_update_networks(local_model, target_model, tau=0.05):
+        for t_params, e_params in zip(target_model.parameters(), local_model.parameters()):
+            t_params.data.copy_(tau * e_params.data + (1 - tau) * t_params.data)
+
+    def train(self):
+        states, actions, rewards, next_states, goals = self.memory.sample(self.batch_size)
+
+        inputs = np.concatenate([states, goals], axis=1)
+        next_inputs = np.concatenate([next_states, goals], axis=1)
+
+        inputs = torch.Tensor(inputs)
+        rewards = torch.Tensor(rewards)
+        next_inputs = torch.Tensor(next_inputs)
+        actions = torch.Tensor(actions)
+
+        with torch.no_grad():
+            target_q = self.critic_target(next_inputs, self.actor_target(next_inputs))
+            target_returns = rewards + self.gamma * target_q
+            target_returns = torch.clamp(target_returns, -1 / (1 - self.gamma), 0)
+
+        q_eval = self.critic(inputs, actions)
+        critic_loss = (target_returns - q_eval).pow(2).mean()
+
+        a = self.actor(inputs)
+        actor_loss = -self.critic(inputs, a).mean()
+        actor_loss += a.pow(2).mean()
 
         self.actor_optimizer.zero_grad()
-        loss_pi = self._compute_loss_pi(data)
-        loss_pi.backward()
+        actor_loss.backward()
         self.actor_optimizer.step()
 
-        # Unfreeze Q-network so you can optimize it at next DDPG step.
-        for p in self.critic_network.parameters():
-            p.requires_grad = True
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
 
-        # Finally, update target networks by polyak averaging.
-        with torch.no_grad():
-            for p, p_targ in zip(self.actor_network.parameters(), self.actor_target.parameters()):
-                p_targ.data.mul_(self.hyperparams["polyak"])
-                p_targ.data.add_((1 - self.hyperparams["polyak"]) * p.data)
+    def save_weights(self, env_name):
+        torch.save({"actor_state_dict": self.actor.state_dict()}, f"weights/{env_name}.pth")
 
-            for p, p_targ in zip(self.critic_network.parameters(), self.critic_target.parameters()):
-                p_targ.data.mul_(self.hyperparams["polyak"])
-                p_targ.data.add_((1 - self.hyperparams["polyak"]) * p.data)
+    def load_weights(self, env_name):
+        checkpoint = torch.load(f"weights/{env_name}.pth")
+        actor_state_dict = checkpoint["actor_state_dict"]
+        self.actor.load_state_dict(actor_state_dict)
+
+    def update_networks(self):
+        self.soft_update_networks(self.actor, self.actor_target, self.tau)
+        self.soft_update_networks(self.critic, self.critic_target, self.tau)

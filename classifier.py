@@ -1,6 +1,5 @@
 from sklearn.svm import OneClassSVM
 from sklearn.svm import SVC
-import itertools
 
 
 class Classifier:

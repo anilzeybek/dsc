@@ -18,16 +18,13 @@
         "hidden_2": 64
     },
     "local_agent": {
-        "lr_actor": 1e-3,
-        "lr_critic": 1e-3,
+        "actor_lr": 1e-3,
+        "critic_lr": 1e-3,
         "buffer_size": 200000,
-        "batch_size": 64,
-        "gamma": 0.99,
-        "polyak": 0.995,
-        "start_steps": 25000,
-        "update_every": 10,
-        "update_after": 1000,
-        "act_noise": 0.1,
+        "batch_size": 128,
+        "gamma": 0.98,
+        "tau": 0.05,
+        "k_future": 4,
         "hidden_1": 400,
         "hidden_2": 300
     }

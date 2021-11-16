@@ -1,7 +1,6 @@
 from copy import deepcopy
 from ddpg.ddpg_agent import DDPGAgent
 from classifier import Classifier
-from itertools import islice
 
 
 class Option:
@@ -21,8 +20,8 @@ class Option:
         if self.this_is_global_option or self.this_is_goal_option:
             assert parent_option is None
 
-        # TODO: act limits check
-        self.agent = DDPGAgent(self.env.observation_space.shape[0], self.env.action_space.shape[0], 1)
+        self.agent = DDPGAgent(3, self.env.action_space.shape[0], env.observation_space["desired_goal"].shape[0],
+                               [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
         if parent_option:
             assert parent_option.initiation_classifier_created
 
@@ -33,7 +32,7 @@ class Option:
         else:
             # This means self is either goal or global option
             self.termination_classifier = Classifier(type_="termination", for_global_option=self.this_is_global_option,
-                                                     for_goal_option=self.this_is_goal_option, env_termination_checker=env.env._task.termination)
+                                                     for_goal_option=self.this_is_goal_option, env_termination_checker=env.termination)
 
             self.initiation_classifier = Classifier(type_="initiation", for_global_option=self.this_is_global_option, for_goal_option=self.this_is_goal_option)
         self.initiation_classifier_created = False
@@ -48,39 +47,73 @@ class Option:
         self.bad_examples_to_refine = []
         self.refine_count = 0
 
-    def execute(self, obs):
+    def execute(self, env_dict):
         assert self.initiation_classifier_created
 
-        starting_obs = deepcopy(obs)
+        starting_obs = deepcopy(env_dict["observation"])
         t = 0
+
+        episode_dict = {
+            "state": [],
+            "action": [],
+            "achieved_goal": [],
+            "desired_goal": [],
+            "next_state": [],
+            "next_achieved_goal": []
+        }
+        obs = env_dict["observation"]
+        achieved_goal = env_dict["achieved_goal"]
+        desired_goal = env_dict["desired_goal"]
+
         reward_list = []
 
         local_done = False
         while not local_done and t < self.budget:
-            action = self.agent.act(obs)
-            next_obs, reward, done, _ = self.env.step(action)
+            action = self.agent.act(obs, desired_goal)
+            next_env_dict, reward, done, _ = self.env.step(action)
             reward_list.append(reward)
 
-            local_done = self.termination_classifier.check(next_obs)
-            local_reward = 1 if local_done else 0
+            next_obs = next_env_dict["observation"]
+            next_achieved_goal = next_env_dict["achieved_goal"]
+            next_desired_goal = next_env_dict["desired_goal"]
 
-            self.agent.step(obs, action, local_reward, next_obs, local_done)
+            local_done = self.termination_classifier.check(next_obs)
+
+            episode_dict["state"].append(obs)
+            episode_dict["action"].append(action)
+            episode_dict["achieved_goal"].append(achieved_goal)
+            episode_dict["desired_goal"].append(desired_goal)
+
             obs = next_obs
+            achieved_goal = next_achieved_goal
+            desired_goal = next_desired_goal
+
             t += 1
+
+        episode_dict["state"].append(obs)
+        episode_dict["achieved_goal"].append(achieved_goal)
+        episode_dict["desired_goal"].append(desired_goal)
+        episode_dict["next_state"] = episode_dict["state"][1:]
+        episode_dict["next_achieved_goal"] = episode_dict["achieved_goal"][1:]
+
+        self.agent.store(deepcopy(episode_dict))
+        if len(self.agent.memory) > self.agent.batch_size:
+            self.agent.train()
+            self.agent.update_networks()
 
         # those successful_observations are not for self, it is for option_without_initiation_classifier
         successful_observation = None
         if local_done:
             self.good_examples_to_refine.append(starting_obs)
-            if len(self.agent.replay_buffer.memory) > self.K:
-                successful_observation = self.agent.replay_buffer.memory[-self.K].obs
+            if len(self.agent.memory) > self.K:
+                successful_observation = self.agent.memory.memory[-self.K].state[0]
         else:
             self.bad_examples_to_refine.append(starting_obs)
 
         if not self.initiation_classifier_refined and len(self.good_examples_to_refine) > self.max_refine:
             self.refine_inititation_classifier()
 
-        return obs, reward_list, done, successful_observation
+        return next_env_dict, reward_list, done, successful_observation
 
     def create_initiation_classifier(self, successful_observation) -> None:
         # there shouldn't be any actions for initiation classifier if we call this function
