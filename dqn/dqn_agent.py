@@ -28,17 +28,20 @@ class DQNAgent:
 
     def add_option(self):
         self.action_size += 1
+        self.Q_network.change_last_layer(self.action_size)
+
         new_Q_network = QNetwork(self.obs_size, self.action_size, self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
         new_Q_network.load_state_dict(self.Q_network.state_dict())
-        new_Q_network.change_last_layer(self.action_size)
         # TODO: (LATER) assign appropriate initial values for new layer
+        self.Q_network = new_Q_network
+        self.target_network = deepcopy(self.Q_network)
 
     def _read_hyperparams(self) -> Dict[str, Any]:
         with open('hyperparams.json') as f:
             hyperparams = json.load(f)
             return hyperparams
 
-    def act(self, obs, option_repertoire) -> int:
+    def act(self, obs, option_repertoire):
         selectable_indexes = []
         for i, o in enumerate(option_repertoire):
             if o.initiation_classifier.check(obs):
@@ -54,7 +57,7 @@ class DQNAgent:
 
                 selected_index = action_values.argmax()
 
-        return option_repertoire[selected_index]
+        return selected_index
 
     def step(self, obs, action, reward_list, next_obs, done) -> None:
         self.memory.store_transition(obs, action, reward_list, next_obs, done)
@@ -76,7 +79,7 @@ class DQNAgent:
 
         Q_current = self.Q_network(observations).gather(1, actions)
         with torch.no_grad():
-            a = self.Q_network(next_observations).argmax(1)
+            a = self.Q_network(next_observations).argmax(1).unsqueeze(1)
             Q_target_next = self.target_network(next_observations).gather(1, a)
 
             discounted_reward = 0

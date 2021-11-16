@@ -1,8 +1,8 @@
 import gym
 import mujoco_maze
 import json
-from dqn.dqn_agent import DQNAgent
 from copy import deepcopy
+from dqn.dqn_agent import DQNAgent
 from option import Option
 from typing import Any, Dict
 
@@ -18,11 +18,13 @@ def initial_state_covered(initial_state, option_repertoire):
         if o.initiation_classifier.check(initial_state):
             return True
 
+    return False
+
 
 def main() -> None:
     hyperparams = read_hyperparams()
     env = gym.make("PointUMaze-v1")
-    initial_state = env.reset()
+    initial_state = deepcopy(env.reset())
 
     global_option = Option(budget=1, env=env, this_is_global_option=True, this_is_goal_option=False, parent_option=None, max_refine=hyperparams['max_refine'], N=hyperparams['N'], K=hyperparams['K'])
     goal_option = Option(budget=hyperparams['budget'], env=env, this_is_global_option=False, this_is_goal_option=True,
@@ -36,17 +38,19 @@ def main() -> None:
     obs = env.reset()
     done = False
     while not done:
-        selected_option = agent_over_options.act(obs, option_repertoire)
-        next_obs, reward_list, done, successful_observations = selected_option.execute(obs)
-        agent_over_options.step(obs, selected_option, reward_list, next_obs, done)
+        option_i = agent_over_options.act(obs, option_repertoire)
+        next_obs, reward_list, done, successful_observations = option_repertoire[option_i].execute(obs)
+        agent_over_options.step(obs, option_i, reward_list, next_obs, done)
 
         if option_without_initiation_classifier.termination_classifier.check(next_obs) and not initial_state_covered(initial_state, option_repertoire[1:]):
-            # no more things to do here, refining is a option's internal process
-            option_without_initiation_classifier.create_initiation_classifier(successful_observations)
-            if option_without_initiation_classifier.initiation_classifier_refined:
+            if not option_without_initiation_classifier.initiation_classifier_created:
+                option_without_initiation_classifier.create_initiation_classifier(successful_observations)
+            else:
                 option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor_network, global_option.agent.critic_network)
                 agent_over_options.add_option()
                 option_repertoire.append(option_without_initiation_classifier)
+
+            if option_without_initiation_classifier.initiation_classifier_refined:
                 option_without_initiation_classifier = Option(hyperparams['budget'], env=env, parent_option=option_without_initiation_classifier,
                                                               max_refine=hyperparams['max_refine'], N=hyperparams['N'], K=hyperparams['K'])
 

@@ -1,6 +1,7 @@
 from copy import deepcopy
 from ddpg.ddpg_agent import DDPGAgent
 from classifier import Classifier
+from itertools import islice
 
 
 class Option:
@@ -72,7 +73,8 @@ class Option:
         successful_observations = None
         if local_done:
             self.good_examples_to_refine.append(starting_obs)
-            successful_observations = self.agent.replay_buffer.memory[-self.K-2:-self.K+2]
+            if len(self.agent.replay_buffer.memory) > self.K:
+                successful_observations = self.agent.replay_buffer.memory[-self.K].obs
         else:
             self.bad_examples_to_refine.append(starting_obs)
 
@@ -85,7 +87,9 @@ class Option:
         assert not self.initiation_classifier_created
         assert not self.initiation_classifier_refined
 
-        self.successful_observations_to_create_initiation_classifier.append(successful_observations)
+        if successful_observations is not None:
+            self.successful_observations_to_create_initiation_classifier.append(successful_observations)
+
         if len(self.successful_observations_to_create_initiation_classifier) == self.N:
             self.initiation_classifier.train_one_class(self.successful_observations_to_create_initiation_classifier)
             self.initiation_classifier_created = True

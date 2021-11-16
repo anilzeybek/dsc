@@ -34,15 +34,15 @@ class Classifier:
 
         # TODO: check what is the output here
         if self.two_class_trained:
-            return self.two_class_svm.predict(x)
+            return self.two_class_svm.predict(x) == 1
 
-        return self.one_class_svm.predict(x)
+        return self.one_class_svm.predict([x])[0] == 1
 
     def train_one_class(self, x):
         assert self.type_ == "initiation"
         assert not self.for_global_option
 
-        x = list(itertools.chain(*x))
+        # TODO: it may be fitting wrong, check when find true termination function
         self.one_class_svm.fit(x)
 
     def train_two_class(self, x, y):
