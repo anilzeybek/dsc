@@ -3,6 +3,7 @@
     "N": 10,
     "K": 20,
     "max_refine": 15,
+    "max_episodes": 10000,
     "agent_over_actions": {
         "lr": 1e-3,
         "buffer_size": 100000,

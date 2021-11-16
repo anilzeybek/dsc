@@ -51,7 +51,7 @@ class DQNAgent:
             selected_index = np.random.choice(selectable_indexes)
         else:
             with torch.no_grad():
-                obs = torch.from_numpy(obs)
+                obs = torch.from_numpy(obs).float()
                 action_values = self.Q_network(obs).numpy()
                 action_values[selectable_indexes] = -np.inf
 

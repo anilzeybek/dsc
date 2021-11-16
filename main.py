@@ -22,6 +22,8 @@ def initial_state_covered(initial_state, option_repertoire):
 
 
 def main() -> None:
+    # environment's initial state must be always same!
+    # in this regard, mujoco_maze package's maze_env.py and point.py files modified
     hyperparams = read_hyperparams()
     env = gym.make("PointUMaze-v1")
     initial_state = deepcopy(env.reset())
@@ -35,24 +37,29 @@ def main() -> None:
 
     agent_over_options = DQNAgent(obs_size=env.observation_space.shape[0], action_size=len(option_repertoire))
 
-    obs = env.reset()
-    done = False
-    while not done:
-        option_i = agent_over_options.act(obs, option_repertoire)
-        next_obs, reward_list, done, successful_observations = option_repertoire[option_i].execute(obs)
-        agent_over_options.step(obs, option_i, reward_list, next_obs, done)
+    for episode_num in range(hyperparams['max_episodes']):
+        obs = env.reset()
+        done = False
 
-        if option_without_initiation_classifier.termination_classifier.check(next_obs) and not initial_state_covered(initial_state, option_repertoire[1:]):
-            if not option_without_initiation_classifier.initiation_classifier_created:
-                option_without_initiation_classifier.create_initiation_classifier(successful_observations)
-            else:
-                option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor_network, global_option.agent.critic_network)
-                agent_over_options.add_option()
-                option_repertoire.append(option_without_initiation_classifier)
+        while not done:
+            option_index = agent_over_options.act(obs, option_repertoire)
+            next_obs, reward_list, done, successful_observation = option_repertoire[option_index].execute(obs)
+            agent_over_options.step(obs, option_index, reward_list, next_obs, done)
+            obs = next_obs
 
-            if option_without_initiation_classifier.initiation_classifier_refined:
-                option_without_initiation_classifier = Option(hyperparams['budget'], env=env, parent_option=option_without_initiation_classifier,
-                                                              max_refine=hyperparams['max_refine'], N=hyperparams['N'], K=hyperparams['K'])
+            if option_without_initiation_classifier.termination_classifier.check(obs) and not initial_state_covered(initial_state, option_repertoire[1:]):
+                if not option_without_initiation_classifier.initiation_classifier_created:
+                    created = option_without_initiation_classifier.create_initiation_classifier(successful_observation)
+                    if created:
+                        option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor_network, global_option.agent.critic_network)
+                        agent_over_options.add_option()
+                        option_repertoire.append(option_without_initiation_classifier)
+
+                if option_without_initiation_classifier.initiation_classifier_refined:
+                    option_without_initiation_classifier = Option(hyperparams['budget'], env=env, parent_option=option_without_initiation_classifier,
+                                                                  max_refine=hyperparams['max_refine'], N=hyperparams['N'], K=hyperparams['K'])
+
+        print(f"{episode_num}/{hyperparams['max_episodes']}")
 
 
 if __name__ == "__main__":
