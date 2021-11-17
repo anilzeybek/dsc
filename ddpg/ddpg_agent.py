@@ -19,6 +19,7 @@ class DDPGAgent:
 
         self.k_future = self.hyperparams['k_future']
 
+        # TODO: hiddens not coming from file, fix it
         self.actor = Actor(self.state_dim, action_dim=self.action_dim, goal_dim=self.goal_dim, action_bounds=self.action_bounds)
         self.critic = Critic(self.state_dim, action_size=self.action_dim, goal_dim=self.goal_dim)
         self.actor_target = deepcopy(self.actor)
@@ -97,6 +98,13 @@ class DDPGAgent:
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
+
+    def load_global_weights(self, global_actor_network, global_critic_network):
+        self.actor.load_state_dict(global_actor_network.state_dict())
+        self.actor_target = deepcopy(self.actor)
+
+        self.critic.load_state_dict(global_critic_network.state_dict())
+        self.critic_target = deepcopy(self.critic)
 
     def save_weights(self, env_name):
         torch.save({"actor_state_dict": self.actor.state_dict()}, f"weights/{env_name}.pth")

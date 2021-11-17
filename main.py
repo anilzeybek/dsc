@@ -15,6 +15,7 @@ def read_hyperparams() -> Dict[str, Any]:
 def initial_state_covered(initial_state, option_repertoire):
     for o in option_repertoire:
         if o.initiation_classifier.check(initial_state):
+            print("------------Initial state covered!")
             return True
 
     return False
@@ -51,7 +52,7 @@ def main() -> None:
                 if not option_without_initiation_classifier.initiation_classifier_created:
                     created = option_without_initiation_classifier.create_initiation_classifier(successful_observation)
                     if created:
-                        option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor_network, global_option.agent.critic_network)
+                        option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor, global_option.agent.critic)
                         agent_over_options.add_option()
                         option_repertoire.append(option_without_initiation_classifier)
 

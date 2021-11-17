@@ -101,12 +101,12 @@ class Option:
             self.agent.train()
             self.agent.update_networks()
 
-        # those successful_observations are not for self, it is for option_without_initiation_classifier
+        # successful_observations are not for self, it is for option_without_initiation_classifier
         successful_observation = None
         if local_done:
             self.good_examples_to_refine.append(starting_obs)
             if len(self.agent.memory) > self.K:
-                successful_observation = self.agent.memory.memory[-self.K].state[0]
+                successful_observation = self.agent.memory.memory[-self.K]['state'][0]
         else:
             self.bad_examples_to_refine.append(starting_obs)
 

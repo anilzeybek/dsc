@@ -18,8 +18,7 @@ class ReplayBuffer:
 
         observations = torch.from_numpy(np.vstack([e.obs for e in experiences if e is not None])).float()
         actions = torch.from_numpy(np.vstack([e.action for e in experiences if e is not None])).long()
-        # TODO: this can be wrong, because rewards are list now
-        rewards = torch.from_numpy(np.vstack([e.reward_list for e in experiences if e is not None])).float()
+        rewards = [e.reward_list for e in experiences if e is not None]
         next_observations = torch.from_numpy(np.vstack([e.next_obs for e in experiences if e is not None])).float()
         dones = torch.from_numpy(np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float()
 

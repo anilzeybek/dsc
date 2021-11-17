@@ -75,17 +75,19 @@ class DQNAgent:
 
     def _learn(self, experiences) -> None:
         observations, actions, rewards_lists, next_observations, dones = experiences
-        # TODO: rewards_lists definetly wrong
+        # Note that rewards_list is a python list, not tensor even not numpy
 
         Q_current = self.Q_network(observations).gather(1, actions)
         with torch.no_grad():
             a = self.Q_network(next_observations).argmax(1).unsqueeze(1)
             Q_target_next = self.target_network(next_observations).gather(1, a)
 
-            discounted_reward = 0
+            discounted_reward = np.zeros((len(rewards_lists), 1))
             for i in range(len(rewards_lists)):
-                discounted_reward += (self.hyperparams['gamma'] ** i) * rewards_lists[i]
+                for j in range(len(rewards_lists[i])):
+                    discounted_reward[i] += (self.hyperparams['gamma'] ** j) * rewards_lists[i][j]
 
+            discounted_reward = torch.from_numpy(discounted_reward)
             Q_target = discounted_reward + (self.hyperparams['gamma'] ** len(rewards_lists)) * Q_target_next * (1 - dones)
 
         loss = F.mse_loss(Q_current, Q_target)
