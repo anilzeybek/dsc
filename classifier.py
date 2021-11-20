@@ -6,10 +6,8 @@ from sklearn.svm import SVC
 
 class Classifier:
     def __init__(self, type_, for_global_option=False, for_goal_option=False, env_termination_checker=None):
-        assert type_ in ["initiation", "termination"]
-
-        # it cant be both global and goal
-        assert not (for_global_option and for_goal_option)
+        assert type_ in ["initiation", "termination"], "type_ can be 'initiation' or 'termination'"
+        assert not (for_global_option and for_goal_option), "it cant be both global and goal"
 
         self.type_ = type_
         self.for_global_option = for_global_option
@@ -21,11 +19,10 @@ class Classifier:
         self.one_class_trained = False
         self.two_class_trained = False
 
-        # if self is goal or global option, termination checker should be provided
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
-            assert self.env_termination_checker is not None
+            assert self.env_termination_checker is not None, "if goal or global option, termination checker should be provided"
         elif self.type_ == "termination":
-            assert self.env_termination_checker is None
+            assert self.env_termination_checker is None, "why provide termination cheecker for non global or goal"
 
     def check(self, x) -> bool:
         if self.type_ == "initiation" and self.for_global_option:
@@ -40,21 +37,19 @@ class Classifier:
         return self.one_class_svm.predict([x])[0] == 1
 
     def sample(self):
-        # sampling only valid for termination classifiers
-        assert self.type_ == "termination"
-        # at least one_class must be trained
-        assert self.one_class_trained
+        assert self.type_ == "termination", "sampling only valid for termination classifiers"
+        assert self.one_class_trained, "at least one_class must be trained"
 
         if self.two_class_trained:
             # TODO:
-            return ...
+            assert False, "implement this"
 
         return random.sample(self.one_class_train_examples)
 
     def train_one_class(self, xs):
-        assert self.type_ == "initiation"
-        assert not self.for_global_option
-        assert not self.one_class_trained
+        assert self.type_ == "initiation", "only initation classifiers can be trained"
+        assert not self.for_global_option, "global option classifiers cannot be trained"
+        assert not self.one_class_trained, "one_class shouldn't be trained yet to train"
 
         self.one_class_train_examples = deepcopy(xs)
 
@@ -63,9 +58,9 @@ class Classifier:
         self.one_class_trained = True
 
     def train_two_class(self, good_examples, bad_examples):
-        assert self.type_ == "initiation"
-        assert not self.for_global_option
-        assert not self.two_class_trained
+        assert self.type_ == "initiation", "only initation classifiers can be trained"
+        assert not self.for_global_option, "global option classifiers cannot be trained"
+        assert not self.two_class_trained, "two_class shouldn't be trained yet to train"
 
         xs = good_examples + bad_examples
         ys = [1 for _ in good_examples] + [0 for _ in bad_examples]

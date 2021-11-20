@@ -48,7 +48,7 @@ class CustomEnv:
         return np.linalg.norm(pos1 - pos2, axis=1) < 1
 
     def step(self, action):
-        assert self.action_space.contains(action)
+        assert self.action_space.contains(action), "action is not valid"
         self.step_count += 1
 
         self.current_pos[0] += action[0]
