@@ -18,6 +18,7 @@ class Classifier:
         self.two_class_svm = SVC(kernel="rbf", gamma="scale", class_weight="balanced")
         self.one_class_trained = False
         self.two_class_trained = False
+        self.good_examples_to_sample = []
 
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
             assert self.env_termination_checker is not None, "if goal or global option, termination checker should be provided"
@@ -40,18 +41,14 @@ class Classifier:
         assert self.type_ == "termination", "sampling only valid for termination classifiers"
         assert self.one_class_trained, "at least one_class must be trained"
 
-        if self.two_class_trained:
-            # TODO:
-            assert False, "implement this"
-
-        return random.sample(self.one_class_train_examples)
+        return random.sample(self.good_examples_to_sample, k=1)[0]
 
     def train_one_class(self, xs):
         assert self.type_ == "initiation", "only initation classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.one_class_trained, "one_class shouldn't be trained yet to train"
 
-        self.one_class_train_examples = deepcopy(xs)
+        self.good_examples_to_sample = deepcopy(xs)
 
         # TODO: it may be fitting wrong, check when find true termination function
         self.one_class_svm.fit(xs)
@@ -61,6 +58,8 @@ class Classifier:
         assert self.type_ == "initiation", "only initation classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.two_class_trained, "two_class shouldn't be trained yet to train"
+
+        self.good_examples_to_sample = deepcopy(good_examples)
 
         xs = good_examples + bad_examples
         ys = [1 for _ in good_examples] + [0 for _ in bad_examples]

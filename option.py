@@ -4,13 +4,15 @@ from classifier import Classifier
 
 
 class Option:
-    def __init__(self, budget: int, env, this_is_global_option, this_is_goal_option, parent_option, max_refine, N, K) -> None:
+    def __init__(self, name, budget: int, env, this_is_global_option, this_is_goal_option, parent_option, min_examples_to_refine, N, K) -> None:
+        print(f"option {name} is generating")
+        self.name = name
         self.budget = budget
         self.env = env
         self.this_is_global_option = this_is_global_option
         self.this_is_goal_option = this_is_goal_option
         self.parent_option = parent_option
-        self.max_refine = max_refine
+        self.min_examples_to_refine = min_examples_to_refine
         self.N = N
         self.K = K
 
@@ -111,7 +113,7 @@ class Option:
         else:
             self.bad_examples_to_refine.append(starting_obs)
 
-        if not self.initiation_classifier_refined and len(self.good_examples_to_refine) > self.max_refine:
+        if not self.initiation_classifier_refined and len(self.good_examples_to_refine) > self.min_examples_to_refine and len(self.bad_examples_to_refine) > self.min_examples_to_refine:
             self.refine_inititation_classifier()
 
         return next_env_dict, reward_list, done, successful_observation
@@ -127,6 +129,7 @@ class Option:
         if len(self.successful_observations_to_create_initiation_classifier) == self.N:
             self.initiation_classifier.train_one_class(self.successful_observations_to_create_initiation_classifier)
             self.initiation_classifier_created = True
+            print(f"initiation classifier for option {self.name} is created")
             return True
 
         return False
@@ -135,6 +138,6 @@ class Option:
         assert self.initiation_classifier_created, "to refine an initiation classifier, it must be created"
         assert not self.initiation_classifier_refined, "you can't refine an already refined initiation classifier"
 
-        if not self.initiation_classifier_refined:
-            self.initiation_classifier.train_two_class(self.good_examples_to_refine, self.bad_examples_to_refine)
-            self.initiation_classifier_refined = True
+        self.initiation_classifier.train_two_class(self.good_examples_to_refine, self.bad_examples_to_refine)
+        self.initiation_classifier_refined = True
+        print(f"initiation classifier for option {self.name} is refined")

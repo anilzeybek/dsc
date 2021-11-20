@@ -28,14 +28,16 @@ def main() -> None:
     env = CustomEnv()
     initial_state = deepcopy(env.reset()['observation'])
 
-    global_option = Option(budget=1, env=env, this_is_global_option=True, this_is_goal_option=False, parent_option=None, max_refine=hyperparams['max_refine'], N=hyperparams['N'], K=hyperparams['K'])
-    goal_option = Option(budget=hyperparams['budget'], env=env, this_is_global_option=False, this_is_goal_option=True,
-                         parent_option=None, max_refine=hyperparams['max_refine'], N=hyperparams['N'], K=hyperparams['K'])
+    global_option = Option("global", budget=1, env=env, this_is_global_option=True, this_is_goal_option=False, parent_option=None,
+                           min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
+    goal_option = Option("goal", budget=hyperparams['budget'], env=env, this_is_global_option=False, this_is_goal_option=True,
+                         parent_option=None, min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
 
     option_repertoire = [global_option]
     option_without_initiation_classifier = goal_option
 
     agent_over_options = DQNAgent(obs_size=3, action_size=len(option_repertoire))
+    agent_no = 0
 
     for episode_num in range(hyperparams['max_episodes']):
         env_dict = env.reset()
@@ -57,8 +59,9 @@ def main() -> None:
                         option_repertoire.append(option_without_initiation_classifier)
 
                 if option_without_initiation_classifier.initiation_classifier_refined:
-                    option_without_initiation_classifier = Option(hyperparams['budget'], env=env, this_is_global_option=False, this_is_goal_option=False,  parent_option=option_without_initiation_classifier,
-                                                                  max_refine=hyperparams['max_refine'], N=hyperparams['N'], K=hyperparams['K'])
+                    option_without_initiation_classifier = Option(agent_no, hyperparams['budget'], env=env, this_is_global_option=False, this_is_goal_option=False,  parent_option=option_without_initiation_classifier,
+                                                                  min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
+                    agent_no += 1
 
         print(f"{episode_num}/{hyperparams['max_episodes']}")
 

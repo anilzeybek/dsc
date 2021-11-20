@@ -52,7 +52,7 @@ class DQNAgent:
             with torch.no_grad():
                 obs = torch.from_numpy(obs).float()
                 action_values = self.Q_network(obs).numpy()
-                action_values[selectable_indexes] = -np.inf
+                action_values[np.setdiff1d(np.arange(len(action_values)), selectable_indexes)] = -np.inf
 
                 selected_index = action_values.argmax()
 
