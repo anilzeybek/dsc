@@ -1,11 +1,10 @@
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from option import Option
 from .model import QNetwork
 from .replay_buffer import ReplayBuffer
 from copy import deepcopy
@@ -87,7 +86,7 @@ class DQNAgent:
                 for j in range(len(rewards_lists[i])):
                     discounted_reward[i] += (self.hyperparams['gamma'] ** j) * rewards_lists[i][j]
 
-            discounted_reward = torch.from_numpy(discounted_reward)
+            discounted_reward = torch.from_numpy(discounted_reward).float()
             Q_target = discounted_reward + (self.hyperparams['gamma'] ** len(rewards_lists)) * Q_target_next * (1 - dones)
 
         loss = F.mse_loss(Q_current, Q_target)

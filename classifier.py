@@ -1,3 +1,5 @@
+import random
+from copy import deepcopy
 from sklearn.svm import OneClassSVM
 from sklearn.svm import SVC
 
@@ -16,6 +18,7 @@ class Classifier:
         self.env_termination_checker = env_termination_checker
         self.one_class_svm = OneClassSVM(kernel="rbf", nu=0.1, gamma="scale")
         self.two_class_svm = SVC(kernel="rbf", gamma="scale", class_weight="balanced")
+        self.one_class_trained = False
         self.two_class_trained = False
 
         # if self is goal or global option, termination checker should be provided
@@ -31,22 +34,41 @@ class Classifier:
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
             return self.env_termination_checker(x)
 
-        # TODO: check what is the output here
         if self.two_class_trained:
-            return self.two_class_svm.predict(x) == 1
+            return self.two_class_svm.predict([x])[0] == 1
 
         return self.one_class_svm.predict([x])[0] == 1
 
-    def train_one_class(self, x):
+    def sample(self):
+        # sampling only valid for termination classifiers
+        assert self.type_ == "termination"
+        # at least one_class must be trained
+        assert self.one_class_trained
+
+        if self.two_class_trained:
+            # TODO:
+            return ...
+
+        return random.sample(self.one_class_train_examples)
+
+    def train_one_class(self, xs):
         assert self.type_ == "initiation"
         assert not self.for_global_option
+        assert not self.one_class_trained
+
+        self.one_class_train_examples = deepcopy(xs)
 
         # TODO: it may be fitting wrong, check when find true termination function
-        self.one_class_svm.fit(x)
+        self.one_class_svm.fit(xs)
+        self.one_class_trained = True
 
-    def train_two_class(self, x, y):
+    def train_two_class(self, good_examples, bad_examples):
         assert self.type_ == "initiation"
         assert not self.for_global_option
+        assert not self.two_class_trained
 
-        self.two_class_svm.fit(x, y)
+        xs = good_examples + bad_examples
+        ys = [1 for _ in good_examples] + [0 for _ in bad_examples]
+
+        self.two_class_svm.fit(xs, ys)
         self.two_class_trained = True

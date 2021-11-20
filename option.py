@@ -23,9 +23,11 @@ class Option:
         self.agent = DDPGAgent(3, self.env.action_space.shape[0], env.observation_space["desired_goal"].shape[0],
                                [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
         if parent_option:
-            assert parent_option.initiation_classifier_created
+            assert parent_option.initiation_classifier_created and parent_option.initiation_classifier_refined
 
             self.termination_classifier = deepcopy(parent_option.initiation_classifier)
+            self.termination_classifier.for_global_option = False
+            self.termination_classifier.for_goal_option = False
             self.termination_classifier.type_ = "termination"
 
             self.initiation_classifier = Classifier(type_="initiation")
@@ -63,19 +65,19 @@ class Option:
         }
         obs = env_dict["observation"]
         achieved_goal = env_dict["achieved_goal"]
-        desired_goal = env_dict["desired_goal"]
+        desired_goal = env_dict["desired_goal"] if self.this_is_global_option or self.this_is_goal_option else self.termination_classifier.sample()
 
         reward_list = []
 
         local_done = False
-        while not local_done and t < self.budget:
+        while t < self.budget:
             action = self.agent.act(obs, desired_goal)
             next_env_dict, reward, done, _ = self.env.step(action)
             reward_list.append(reward)
 
             next_obs = next_env_dict["observation"]
             next_achieved_goal = next_env_dict["achieved_goal"]
-            next_desired_goal = next_env_dict["desired_goal"]
+            next_desired_goal = next_env_dict["desired_goal"] if self.this_is_global_option or self.this_is_goal_option else deepcopy(desired_goal)
 
             local_done = self.termination_classifier.check(next_obs)
 
