@@ -50,7 +50,6 @@ class Classifier:
 
         self.good_examples_to_sample = deepcopy(xs)
 
-        # TODO: it may be fitting wrong, check when find true termination function
         self.one_class_svm.fit(xs)
         self.one_class_trained = True
 

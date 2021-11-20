@@ -44,6 +44,7 @@ def main() -> None:
         done = False
 
         while not done:
+            # TODO: decrease epsilon decrease rate
             option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
             next_env_dict, reward_list, done, successful_observation = option_repertoire[option_index].execute(env_dict)
             agent_over_options.step(env_dict['observation'], option_index, reward_list, next_env_dict['observation'], done)
