@@ -115,7 +115,7 @@ class Option:
         else:
             self.bad_examples_to_refine.append(starting_obs)
 
-        if not self.initiation_classifier_refined and len(self.good_examples_to_refine) >= self.min_examples_to_refine and len(self.bad_examples_to_refine) >= self.min_examples_to_refine:
+        if not self.initiation_classifier_refined and len(self.good_examples_to_refine) >= self.min_examples_to_refine:
             self.refine_inititation_classifier()
 
         return next_env_dict, reward_list, done, successful_observation

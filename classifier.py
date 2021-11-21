@@ -1,5 +1,6 @@
 import random
 from copy import deepcopy
+import numpy as np
 from sklearn.svm import OneClassSVM
 from sklearn.svm import SVC
 
@@ -15,9 +16,10 @@ class Classifier:
 
         self.env_termination_checker = env_termination_checker
         self.one_class_svm = OneClassSVM(kernel="rbf", nu=0.1, gamma="scale")
-        self.two_class_svm = SVC(kernel="rbf", gamma="scale", class_weight="balanced")
+        self.better_one_class_svm = OneClassSVM(kernel="rbf", nu=0.1, gamma="scale")
+
         self.one_class_trained = False
-        self.two_class_trained = False
+        self.better_one_class_trained = False
         self.good_examples_to_sample = []
 
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
@@ -32,8 +34,8 @@ class Classifier:
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
             return self.env_termination_checker(x)
 
-        if self.two_class_trained:
-            return self.two_class_svm.predict([x])[0] == 1
+        if self.better_one_class_trained:
+            return self.better_one_class_svm.predict([x])[0] == 1
 
         return self.one_class_svm.predict([x])[0] == 1
 
@@ -56,16 +58,25 @@ class Classifier:
     def train_two_class(self, good_examples, bad_examples):
         assert self.type_ == "initiation", "only initation classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
-        assert not self.two_class_trained, "two_class shouldn't be trained yet to train"
+        assert not self.better_one_class_trained, "better_one_class shouldn't be trained"
 
-        # TODO: top priority, fitting very bad
+        if len(bad_examples) == 0:
+            self.better_one_class_svm = deepcopy(self.one_class_svm)
+            self.better_one_class_trained = True
+            return
 
         # we are also using the data to train one class classifier for good_examples
         good_examples = good_examples + deepcopy(self.good_examples_to_sample)
         self.good_examples_to_sample = deepcopy(good_examples)
 
-        xs = good_examples + bad_examples
-        ys = [1 for _ in good_examples] + [0 for _ in bad_examples]
+        xs = np.array(good_examples + bad_examples)
+        ys = np.array([1 for _ in good_examples] + [0 for _ in bad_examples])
 
-        self.two_class_svm.fit(xs, ys)
-        self.two_class_trained = True
+        two_class_svm = SVC(kernel="rbf", gamma="scale", class_weight="balanced")
+        two_class_svm.fit(xs, ys)
+
+        training_predictions = two_class_svm.predict(xs)
+        positive_training_examples = xs[training_predictions == 1]
+
+        self.better_one_class_svm.fit(positive_training_examples)
+        self.better_one_class_trained = True
