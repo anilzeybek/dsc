@@ -100,7 +100,8 @@ class Option:
         episode_dict["next_achieved_goal"] = episode_dict["achieved_goal"][1:]
 
         self.agent.store(deepcopy(episode_dict))
-        if len(self.agent.memory) > self.agent.batch_size:
+        if len(self.agent.memory) >= self.agent.batch_size:
+            # TODO: goal option has problems reaching its goal
             self.agent.train()
             self.agent.update_networks()
 
@@ -114,7 +115,7 @@ class Option:
         else:
             self.bad_examples_to_refine.append(starting_obs)
 
-        # TODO: good_examples or bad_examples might stop increasing, fix it
+        # TODO: TOP PRIORITY | good_examples or bad_examples might stop increasing, fix it
         if not self.initiation_classifier_refined and len(self.good_examples_to_refine) > self.min_examples_to_refine and len(self.bad_examples_to_refine) > self.min_examples_to_refine:
             self.refine_inititation_classifier()
 

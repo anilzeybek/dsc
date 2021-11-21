@@ -13,11 +13,11 @@ class CustomEnv:
         self.action_space = spaces.Box(-1.0, 1.0, (3,), np.float32)
 
         self.start_pos = np.array([0.0, 0.0, 0.0], dtype=np.float32)
-        self.goal_pos = np.array([10.0, 15.0, 20.0], dtype=np.float32)
+        self.goal_pos = np.array([20.0, 30.0, 40.0], dtype=np.float32)
         self.current_pos = np.array([0.0, 0.0, 0.0], dtype=np.float32)
 
         self.step_count = 0
-        self.max_step_count = 50
+        self.max_step_count = 100
 
     def compute_reward(self, achieved, desired, _):
         return (1 * self._is_close(achieved, desired)) - 1

@@ -14,7 +14,7 @@ class DQNAgent:
     def __init__(self, obs_size, action_size) -> None:
         self.obs_size = obs_size
         self.action_size = action_size
-        self.hyperparams = self._read_hyperparams()['agent_over_actions']
+        self.hyperparams = self._read_hyperparams()['agent_over_options']
 
         self.Q_network = QNetwork(self.obs_size, self.action_size, self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
         self.target_network = deepcopy(self.Q_network)
@@ -32,6 +32,7 @@ class DQNAgent:
         new_Q_network = QNetwork(self.obs_size, self.action_size, self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
         new_Q_network.load_state_dict(self.Q_network.state_dict())
         # TODO: (LATER) assign appropriate initial values for new layer
+        # TODO: maybe its achievable by resetting epsilon?
         self.Q_network = new_Q_network
         self.target_network = deepcopy(self.Q_network)
 

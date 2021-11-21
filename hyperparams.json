@@ -1,10 +1,10 @@
 {
-    "budget": 10,
-    "N": 10,
+    "budget": 20,
+    "N": 20,
     "K": 5,
     "min_examples_to_refine": 20,
-    "max_episodes": 10000,
-    "agent_over_actions": {
+    "max_episodes": 1000,
+    "agent_over_options": {
         "lr": 1e-3,
         "buffer_size": 100000,
         "batch_size": 64,
@@ -13,7 +13,7 @@
         "update_every": 4,
         "eps_start": 1.0,
         "eps_end": 0.01,
-        "eps_decay": 0.995,
+        "eps_decay": 0.998,
         "hidden_1": 64,
         "hidden_2": 64
     },
@@ -21,11 +21,11 @@
         "actor_lr": 1e-3,
         "critic_lr": 1e-3,
         "buffer_size": 200000,
-        "batch_size": 128,
+        "batch_size": 64,
         "gamma": 0.98,
         "tau": 0.05,
         "k_future": 4,
-        "hidden_1": 400,
-        "hidden_2": 300
+        "hidden_1": 256,
+        "hidden_2": 256
     }
 }
