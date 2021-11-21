@@ -57,4 +57,4 @@ class Memory:
 
     @staticmethod
     def clip_obs(x):
-        return np.clip(x, -200, 200)
+        return np.clip(x, -300, 300)

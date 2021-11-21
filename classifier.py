@@ -58,6 +58,10 @@ class Classifier:
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.two_class_trained, "two_class shouldn't be trained yet to train"
 
+        # TODO: top priority, fitting very bad
+
+        # we are also using the data to train one class classifier for good_examples
+        good_examples = good_examples + deepcopy(self.good_examples_to_sample)
         self.good_examples_to_sample = deepcopy(good_examples)
 
         xs = good_examples + bad_examples

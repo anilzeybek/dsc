@@ -1,6 +1,6 @@
 {
     "budget": 20,
-    "N": 20,
+    "N": 10,
     "K": 5,
     "min_examples_to_refine": 20,
     "max_episodes": 1000,
@@ -25,7 +25,7 @@
         "gamma": 0.98,
         "tau": 0.05,
         "k_future": 4,
-        "hidden_1": 256,
-        "hidden_2": 256
+        "hidden_1": 128,
+        "hidden_2": 128
     }
 }

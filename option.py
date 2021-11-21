@@ -100,10 +100,10 @@ class Option:
         episode_dict["next_achieved_goal"] = episode_dict["achieved_goal"][1:]
 
         self.agent.store(deepcopy(episode_dict))
-        if len(self.agent.memory) >= self.agent.batch_size:
-            # TODO: goal option has problems reaching its goal
+        for _ in range(self.budget):
             self.agent.train()
-            self.agent.update_networks()
+
+        self.agent.update_networks()
 
         # successful_observations are not for self, it is for option_without_initiation_classifier
         successful_observation = None
@@ -115,8 +115,7 @@ class Option:
         else:
             self.bad_examples_to_refine.append(starting_obs)
 
-        # TODO: TOP PRIORITY | good_examples or bad_examples might stop increasing, fix it
-        if not self.initiation_classifier_refined and len(self.good_examples_to_refine) > self.min_examples_to_refine and len(self.bad_examples_to_refine) > self.min_examples_to_refine:
+        if not self.initiation_classifier_refined and len(self.good_examples_to_refine) >= self.min_examples_to_refine and len(self.bad_examples_to_refine) >= self.min_examples_to_refine:
             self.refine_inititation_classifier()
 
         return next_env_dict, reward_list, done, successful_observation
@@ -141,7 +140,6 @@ class Option:
         assert self.initiation_classifier_created, "to refine an initiation classifier, it must be created"
         assert not self.initiation_classifier_refined, "you can't refine an already refined initiation classifier"
 
-        # TODO: we can also use the examples to train one_class for good_examples
         self.initiation_classifier.train_two_class(self.good_examples_to_refine, self.bad_examples_to_refine)
         self.initiation_classifier_refined = True
         print(f"option {self.name}: initiation classifier refined")

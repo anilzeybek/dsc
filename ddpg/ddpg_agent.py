@@ -19,7 +19,6 @@ class DDPGAgent:
 
         self.k_future = self.hyperparams['k_future']
 
-        # TODO: hiddens not coming from file, fix it
         self.actor = Actor(self.state_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                            hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'],
                            action_bounds=self.action_bounds)
