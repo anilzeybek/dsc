@@ -4,25 +4,22 @@ from classifier import Classifier
 
 
 class Option:
-    def __init__(self, name, budget: int, env, this_is_global_option, this_is_goal_option, parent_option, min_examples_to_refine, N, K) -> None:
+    def __init__(self, name, budget: int, env, parent_option, min_examples_to_refine, N, K) -> None:
         self.name = name
         self.budget = budget
         self.env = env
-        self.this_is_global_option = this_is_global_option
-        self.this_is_goal_option = this_is_goal_option
         self.parent_option = parent_option
         self.min_examples_to_refine = min_examples_to_refine
         self.N = N
         self.K = K
 
-        assert not (this_is_global_option and this_is_goal_option), "an option can't be both global and goal"
-
-        if self.this_is_global_option or self.this_is_goal_option:
+        if self.name == "global" or self.name == "goal":
             assert parent_option is None, "global and goal options cant have parent option"
 
         self.agent = DDPGAgent(3, self.env.action_space.shape[0], env.observation_space["desired_goal"].shape[0],
                                [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
         if parent_option:
+            assert self.name != "global" or self.name != "goal"
             assert parent_option.initiation_classifier_created, "if parent provided, its initiation classifier should be created"
 
             self.termination_classifier = deepcopy(parent_option.initiation_classifier)
@@ -34,14 +31,17 @@ class Option:
             self.initiation_classifier = Classifier(type_="initiation")
         else:
             # This means self is either goal or global option
-            self.termination_classifier = Classifier(type_="termination", for_global_option=self.this_is_global_option,
-                                                     for_goal_option=self.this_is_goal_option, env_termination_checker=env.termination)
+            this_is_global_option = (self.name == "global")
+            this_is_goal_option = (self.name == "goal")
 
-            self.initiation_classifier = Classifier(type_="initiation", for_global_option=self.this_is_global_option, for_goal_option=self.this_is_goal_option)
+            self.termination_classifier = Classifier(type_="termination", for_global_option=this_is_global_option,
+                                                     for_goal_option=this_is_goal_option, env_termination_checker=env.termination)
+
+            self.initiation_classifier = Classifier(type_="initiation", for_global_option=this_is_global_option, for_goal_option=this_is_goal_option)
         self.initiation_classifier_created = False
         self.initiation_classifier_refined = False
 
-        if self.this_is_global_option:
+        if self.name == "global":
             self.initiation_classifier_created = True
             self.initiation_classifier_refined = True
 
@@ -66,7 +66,7 @@ class Option:
         }
         obs = env_dict["observation"]
         achieved_goal = env_dict["achieved_goal"]
-        desired_goal = env_dict["desired_goal"] if self.this_is_global_option or self.this_is_goal_option else self.termination_classifier.sample()
+        desired_goal = env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else self.termination_classifier.sample()
 
         reward_list = []
 
@@ -78,7 +78,7 @@ class Option:
 
             next_obs = next_env_dict["observation"]
             next_achieved_goal = next_env_dict["achieved_goal"]
-            next_desired_goal = next_env_dict["desired_goal"] if self.this_is_global_option or self.this_is_goal_option else deepcopy(desired_goal)
+            next_desired_goal = next_env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else deepcopy(desired_goal)
 
             local_done = self.termination_classifier.check(next_obs)
 

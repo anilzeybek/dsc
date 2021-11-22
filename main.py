@@ -28,10 +28,10 @@ def main() -> None:
     env = CustomEnv()
     initial_state = deepcopy(env.reset()['observation'])
 
-    global_option = Option("global|0", budget=1, env=env, this_is_global_option=True, this_is_goal_option=False, parent_option=None,
-                           min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
-    goal_option = Option("goal|1", budget=hyperparams['budget'], env=env, this_is_global_option=False, this_is_goal_option=True,
-                         parent_option=None, min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
+    global_option = Option("global", budget=1, env=env, parent_option=None, min_examples_to_refine=hyperparams['min_examples_to_refine'],
+                           N=hyperparams['N'], K=hyperparams['K'])
+    goal_option = Option("goal", budget=hyperparams['budget'], env=env, parent_option=None,
+                         min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
 
     option_repertoire = [global_option]
     option_without_initiation_classifier = goal_option
@@ -46,7 +46,7 @@ def main() -> None:
 
         while not done:
             option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
-            if option_repertoire[option_index].this_is_global_option:
+            if option_repertoire[option_index].name == "global":
                 obs_history.append(env_dict['observation'])
 
             next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict)
@@ -66,7 +66,7 @@ def main() -> None:
                         option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor, global_option.agent.critic)
                         agent_over_options.add_option()
                         option_repertoire.append(option_without_initiation_classifier)
-                        option_without_initiation_classifier = Option(agent_no, hyperparams['budget'], env=env, this_is_global_option=False, this_is_goal_option=False,  parent_option=option_without_initiation_classifier,
+                        option_without_initiation_classifier = Option(agent_no, hyperparams['budget'], env=env, parent_option=option_without_initiation_classifier,
                                                                       min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
                         agent_no += 1
 
