@@ -28,32 +28,40 @@ def main() -> None:
     env = CustomEnv()
     initial_state = deepcopy(env.reset()['observation'])
 
-    global_option = Option("global", budget=1, env=env, this_is_global_option=True, this_is_goal_option=False, parent_option=None,
+    global_option = Option("global|0", budget=1, env=env, this_is_global_option=True, this_is_goal_option=False, parent_option=None,
                            min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
-    goal_option = Option("goal", budget=hyperparams['budget'], env=env, this_is_global_option=False, this_is_goal_option=True,
+    goal_option = Option("goal|1", budget=hyperparams['budget'], env=env, this_is_global_option=False, this_is_goal_option=True,
                          parent_option=None, min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
 
     option_repertoire = [global_option]
     option_without_initiation_classifier = goal_option
 
     agent_over_options = DQNAgent(obs_size=3, action_size=len(option_repertoire))
-    agent_no = 0
+    agent_no = 2
 
     for episode_num in range(hyperparams['max_episodes']):
         env_dict = env.reset()
         done = False
+        obs_history = []
 
         while not done:
             option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
+            if option_repertoire[option_index].this_is_global_option:
+                obs_history.append(env_dict['observation'])
+
             next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict)
             agent_over_options.step(env_dict['observation'], option_index, reward_list, next_env_dict['observation'], done)
 
             env_dict = deepcopy(next_env_dict)
 
-            if option_without_initiation_classifier.termination_classifier.check(env_dict['observation']) and not initial_state_covered(initial_state, option_repertoire[1:]):
-                if not option_without_initiation_classifier.initiation_classifier_created:
-                    # TODO: since we don't stop when we hit, looking at -K might be wrong, also 0, 0, 0 doesnt come????
-                    created = option_without_initiation_classifier.create_initiation_classifier(global_option.agent.memory.memory[-hyperparams['K']]['state'][0])
+            if not initial_state_covered(initial_state, option_repertoire[1:]):
+                if option_without_initiation_classifier.termination_classifier.check(env_dict['observation']) and not option_without_initiation_classifier.initiation_classifier_created:
+                    try:
+                        k_steps_before = obs_history[-hyperparams['K']]
+                    except IndexError:
+                        k_steps_before = obs_history[0]
+
+                    created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before)
                     if created:
                         option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor, global_option.agent.critic)
                         agent_over_options.add_option()

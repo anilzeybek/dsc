@@ -52,6 +52,7 @@ class Classifier:
 
         self.good_examples_to_sample = deepcopy(xs)
 
+        # TODO: when xs consists of full of zeros, it says zero is not 0 :D
         self.one_class_svm.fit(xs)
         self.one_class_trained = True
 

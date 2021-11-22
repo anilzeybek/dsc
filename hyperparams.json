@@ -1,6 +1,6 @@
 {
     "budget": 20,
-    "N": 10,
+    "N": 15,
     "K": 10,
     "min_examples_to_refine": 30,
     "max_episodes": 1000,
