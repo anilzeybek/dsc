@@ -14,12 +14,12 @@ class Classifier:
         self.for_global_option = for_global_option
         self.for_goal_option = for_goal_option
 
+        self.for_last_option = False
         self.env_termination_checker = env_termination_checker
         self.one_class_svm = OneClassSVM(kernel="rbf", nu=0.1, gamma="scale")
-        self.better_one_class_svm = OneClassSVM(kernel="rbf", nu=0.1, gamma="scale")
 
         self.one_class_trained = False
-        self.better_one_class_trained = False
+        self.one_class_refined = False
         self.good_examples_to_sample = []
 
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
@@ -34,8 +34,8 @@ class Classifier:
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
             return self.env_termination_checker(x)
 
-        if self.better_one_class_trained:
-            return self.better_one_class_svm.predict([x])[0] == 1
+        if self.for_last_option and x.tolist() == self.initial_state.tolist():
+            return True
 
         return self.one_class_svm.predict([x])[0] == 1
 
@@ -45,25 +45,30 @@ class Classifier:
 
         return random.sample(self.good_examples_to_sample, k=1)[0]
 
-    def train_one_class(self, xs):
+    def train_one_class(self, xs, initial_state):
+        # requirement for initial_state explained in the function calling this
+
         assert self.type_ == "initiation", "only initation classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.one_class_trained, "one_class shouldn't be trained yet to train"
 
         self.good_examples_to_sample = deepcopy(xs)
 
-        # TODO: when xs consists of full of zeros, it says zero is not 0 :D
+        for arr in xs:
+            if arr.tolist() == initial_state.tolist():
+                self.for_last_option = True
+                self.initial_state = initial_state
+
         self.one_class_svm.fit(xs)
         self.one_class_trained = True
 
     def train_two_class(self, good_examples, bad_examples):
         assert self.type_ == "initiation", "only initation classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
-        assert not self.better_one_class_trained, "better_one_class shouldn't be trained"
+        assert not self.one_class_refined, "one_class shouldn't be re-trained"
 
         if len(bad_examples) == 0:
-            self.better_one_class_svm = deepcopy(self.one_class_svm)
-            self.better_one_class_trained = True
+            self.one_class_refined = True
             return
 
         # we are also using the data to train one class classifier for good_examples
@@ -80,5 +85,5 @@ class Classifier:
         training_predictions = two_class_svm.predict(xs)
         positive_training_examples = xs[training_predictions == 1]
 
-        self.better_one_class_svm.fit(positive_training_examples)
-        self.better_one_class_trained = True
+        self.one_class_svm.fit(positive_training_examples)
+        self.one_class_refined = True

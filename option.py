@@ -23,9 +23,10 @@ class Option:
         self.agent = DDPGAgent(3, self.env.action_space.shape[0], env.observation_space["desired_goal"].shape[0],
                                [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
         if parent_option:
-            assert parent_option.initiation_classifier_created and parent_option.initiation_classifier_refined, "if parent provided, its initiation classifier should be fully trained"
+            assert parent_option.initiation_classifier_created, "if parent provided, its initiation classifier should be created"
 
             self.termination_classifier = deepcopy(parent_option.initiation_classifier)
+            self.termination_classifier.one_class_svm = parent_option.initiation_classifier.one_class_svm  # we want both of them to point same memory
             self.termination_classifier.for_global_option = False
             self.termination_classifier.for_goal_option = False
             self.termination_classifier.type_ = "termination"
@@ -109,12 +110,15 @@ class Option:
         else:
             self.bad_examples_to_refine.append(starting_obs)
 
+        # TODO: from now on, refining shouldn't be limited to just 1, a couple of per option maybe?
         if not self.initiation_classifier_refined and len(self.good_examples_to_refine) >= self.min_examples_to_refine:
             self.refine_inititation_classifier()
 
         return next_env_dict, reward_list, done
 
-    def create_initiation_classifier(self, successful_observation) -> None:
+    def create_initiation_classifier(self, successful_observation, initial_state) -> None:
+        # initial_state is required because if list contains only it, it fails
+
         assert not self.initiation_classifier_created, "if you call this function, initiation classifier must be untouched"
         assert not self.initiation_classifier_refined, "if you call this function, initiation classifier must be untouched"
 
@@ -122,7 +126,7 @@ class Option:
             self.successful_observations_to_create_initiation_classifier.append(successful_observation)
 
         if len(self.successful_observations_to_create_initiation_classifier) == self.N:
-            self.initiation_classifier.train_one_class(self.successful_observations_to_create_initiation_classifier)
+            self.initiation_classifier.train_one_class(self.successful_observations_to_create_initiation_classifier, initial_state)
             self.initiation_classifier_created = True
             print(f"option {self.name}: initiation classifier created")
             return True

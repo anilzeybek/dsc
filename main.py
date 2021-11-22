@@ -37,7 +37,7 @@ def main() -> None:
     option_without_initiation_classifier = goal_option
 
     agent_over_options = DQNAgent(obs_size=3, action_size=len(option_repertoire))
-    agent_no = 2
+    agent_no = 2  # to match the option index
 
     for episode_num in range(hyperparams['max_episodes']):
         env_dict = env.reset()
@@ -61,16 +61,14 @@ def main() -> None:
                     except IndexError:
                         k_steps_before = obs_history[0]
 
-                    created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before)
+                    created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before, initial_state)
                     if created:
                         option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor, global_option.agent.critic)
                         agent_over_options.add_option()
                         option_repertoire.append(option_without_initiation_classifier)
-
-                if option_without_initiation_classifier.initiation_classifier_refined:
-                    option_without_initiation_classifier = Option(agent_no, hyperparams['budget'], env=env, this_is_global_option=False, this_is_goal_option=False,  parent_option=option_without_initiation_classifier,
-                                                                  min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
-                    agent_no += 1
+                        option_without_initiation_classifier = Option(agent_no, hyperparams['budget'], env=env, this_is_global_option=False, this_is_goal_option=False,  parent_option=option_without_initiation_classifier,
+                                                                      min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
+                        agent_no += 1
 
         print(f"{episode_num}/{hyperparams['max_episodes']}")
 
