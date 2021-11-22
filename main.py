@@ -45,14 +45,15 @@ def main() -> None:
 
         while not done:
             option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
-            next_env_dict, reward_list, done, successful_observation = option_repertoire[option_index].execute(env_dict)
+            next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict)
             agent_over_options.step(env_dict['observation'], option_index, reward_list, next_env_dict['observation'], done)
 
             env_dict = deepcopy(next_env_dict)
 
             if option_without_initiation_classifier.termination_classifier.check(env_dict['observation']) and not initial_state_covered(initial_state, option_repertoire[1:]):
                 if not option_without_initiation_classifier.initiation_classifier_created:
-                    created = option_without_initiation_classifier.create_initiation_classifier(successful_observation)
+                    # TODO: since we don't stop when we hit, looking at -K might be wrong, also 0, 0, 0 doesnt come????
+                    created = option_without_initiation_classifier.create_initiation_classifier(global_option.agent.memory.memory[-hyperparams['K']]['state'][0])
                     if created:
                         option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor, global_option.agent.critic)
                         agent_over_options.add_option()

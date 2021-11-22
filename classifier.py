@@ -75,6 +75,7 @@ class Classifier:
         two_class_svm = SVC(kernel="rbf", gamma="scale", class_weight="balanced")
         two_class_svm.fit(xs, ys)
 
+        # TODO: sometimes training_predictions becomes empty???????????????
         training_predictions = two_class_svm.predict(xs)
         positive_training_examples = xs[training_predictions == 1]
 

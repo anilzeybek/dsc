@@ -47,7 +47,6 @@ class Option:
         self.successful_observations_to_create_initiation_classifier = []
         self.good_examples_to_refine = []
         self.bad_examples_to_refine = []
-        self.refine_count = 0
         print(f"option {self.name}: generated")
 
     def execute(self, env_dict):
@@ -105,23 +104,17 @@ class Option:
 
         self.agent.update_networks()
 
-        # successful_observations are not for self, it is for option_without_initiation_classifier
-        successful_observation = None
         if local_done:
             self.good_examples_to_refine.append(starting_obs)
-            if len(self.agent.memory) > self.K:
-                # TODO: since we don't stop when we hit, looking at -K might be wrong
-                successful_observation = self.agent.memory.memory[-self.K]['state'][0]
         else:
             self.bad_examples_to_refine.append(starting_obs)
 
         if not self.initiation_classifier_refined and len(self.good_examples_to_refine) >= self.min_examples_to_refine:
             self.refine_inititation_classifier()
 
-        return next_env_dict, reward_list, done, successful_observation
+        return next_env_dict, reward_list, done
 
     def create_initiation_classifier(self, successful_observation) -> None:
-        # there shouldn't be any actions for initiation classifier if we call this function
         assert not self.initiation_classifier_created, "if you call this function, initiation classifier must be untouched"
         assert not self.initiation_classifier_refined, "if you call this function, initiation classifier must be untouched"
 
