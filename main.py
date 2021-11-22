@@ -12,7 +12,7 @@ def read_hyperparams() -> Dict[str, Any]:
         return hyperparams
 
 
-def initial_state_covered(initial_state, option_repertoire):
+def is_initial_state_covered(initial_state, option_repertoire):
     for o in option_repertoire:
         if o.initiation_classifier.check(initial_state):
             print("------------Initial state covered!")
@@ -27,6 +27,7 @@ def main() -> None:
     hyperparams = read_hyperparams()
     env = CustomEnv()
     initial_state = deepcopy(env.reset()['observation'])
+    initial_state_covered = False
 
     global_option = Option("global", budget=1, env=env, parent_option=None, min_examples_to_refine=hyperparams['min_examples_to_refine'],
                            N=hyperparams['N'], K=hyperparams['K'])
@@ -54,7 +55,7 @@ def main() -> None:
 
             env_dict = deepcopy(next_env_dict)
 
-            if not initial_state_covered(initial_state, option_repertoire[1:]):
+            if not initial_state_covered:
                 if option_without_initiation_classifier.termination_classifier.check(env_dict['observation']) and not option_without_initiation_classifier.initiation_classifier_created:
                     try:
                         k_steps_before = obs_history[-hyperparams['K']]
@@ -69,6 +70,7 @@ def main() -> None:
                         option_without_initiation_classifier = Option(agent_no, hyperparams['budget'], env=env, parent_option=option_without_initiation_classifier,
                                                                       min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
                         agent_no += 1
+                        initial_state_covered = is_initial_state_covered(initial_state, option_repertoire[1:])
 
         print(f"{episode_num}/{hyperparams['max_episodes']}")
 

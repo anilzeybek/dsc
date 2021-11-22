@@ -67,10 +67,6 @@ class Classifier:
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.one_class_refined, "one_class shouldn't be re-trained"
 
-        if len(bad_examples) == 0:
-            self.one_class_refined = True
-            return
-
         # we are also using the data to train one class classifier for good_examples
         good_examples = good_examples + deepcopy(self.good_examples_to_sample)
         self.good_examples_to_sample = deepcopy(good_examples)

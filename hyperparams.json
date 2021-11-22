@@ -3,7 +3,7 @@
     "N": 15,
     "K": 10,
     "min_examples_to_refine": 30,
-    "max_episodes": 1000,
+    "max_episodes": 250,
     "agent_over_options": {
         "lr": 1e-3,
         "buffer_size": 100000,

@@ -105,14 +105,15 @@ class Option:
 
         self.agent.update_networks()
 
-        if local_done:
-            self.good_examples_to_refine.append(starting_obs)
-        else:
-            self.bad_examples_to_refine.append(starting_obs)
+        if self.name != "global":
+            if local_done:
+                self.good_examples_to_refine.append(starting_obs)
+            else:
+                self.bad_examples_to_refine.append(starting_obs)
 
-        # TODO: from now on, refining shouldn't be limited to just 1, a couple of per option maybe?
-        if not self.initiation_classifier_refined and len(self.good_examples_to_refine) >= self.min_examples_to_refine:
-            self.refine_inititation_classifier()
+            # TODO: from now on, refining shouldn't be limited to just 1, a couple of per option maybe?
+            if not self.initiation_classifier_refined and len(self.good_examples_to_refine) >= self.min_examples_to_refine and len(self.bad_examples_to_refine) >= self.min_examples_to_refine:
+                self.refine_inititation_classifier()
 
         return next_env_dict, reward_list, done
 
