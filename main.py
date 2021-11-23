@@ -32,22 +32,28 @@ def eval():
     #     if f_name.split('.')[-1] == "pickle":
     #         with open(f"./train_results/{f_name}", 'rb') as f:
     #             option_repertoire.append(pickle.load(f))
-
+    env = CustomEnv()
     with open(f"./train_results/options.pickle", 'rb') as f:
         option_repertoire = pickle.load(f)
+
+    for o in option_repertoire:
+        o.env = env
 
     agent_over_options = DQNAgent(obs_size=3, action_size=len(option_repertoire))
     agent_over_options.load()
 
-    env = CustomEnv()
     while True:
         env_dict = env.reset()
         done = False
+        total_reward = 0
 
         while not done:
             option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
             next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict)
+            total_reward += sum(reward_list)
             env_dict = deepcopy(next_env_dict)
+
+        print(total_reward)
 
 
 def train():
