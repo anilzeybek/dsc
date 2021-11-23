@@ -7,6 +7,7 @@ from custom_env import CustomEnv
 import os
 import pickle
 import sys
+from time import time
 
 
 def read_hyperparams() -> Dict[str, Any]:
@@ -59,6 +60,8 @@ def eval():
 def train():
     # environment's initial state must be always same!
     # in this regard, mujoco_maze package's maze_env.py and point.py files modified
+    start = time()
+
     hyperparams = read_hyperparams()
     env = CustomEnv()
     initial_state = deepcopy(env.reset()['observation'])
@@ -109,11 +112,12 @@ def train():
 
         print(f"{episode_num}/{hyperparams['max_episodes']}")
 
-    print("training completed")
-    os.makedirs("./train_results", exist_ok=True)
+    end = time()
+    print("training completed, elapsed time: ", end-start)
 
     for o in option_repertoire:
         o.freeze()
+    os.makedirs("./train_results", exist_ok=True)
 
     with open(f'./train_results/options.pickle', 'wb') as f:
         pickle.dump(option_repertoire, f)
