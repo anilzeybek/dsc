@@ -108,11 +108,11 @@ class DDPGAgent:
         self.critic.load_state_dict(global_critic_network.state_dict())
         self.critic_target = deepcopy(self.critic)
 
-    def save_weights(self, env_name):
-        torch.save({"actor_state_dict": self.actor.state_dict()}, f"weights/{env_name}.pth")
+    def save_weights(self, name):
+        torch.save({"actor_state_dict": self.actor.state_dict()}, f"weights/{name}.pth")
 
-    def load_weights(self, env_name):
-        checkpoint = torch.load(f"weights/{env_name}.pth")
+    def load_weights(self, name):
+        checkpoint = torch.load(f"weights/{name}.pth")
         actor_state_dict = checkpoint["actor_state_dict"]
         self.actor.load_state_dict(actor_state_dict)
 

@@ -98,3 +98,10 @@ class DQNAgent:
         self.learn_count += 1
         if self.learn_count % self.hyperparams['sync_target_every'] == 0:
             self.target_network.load_state_dict(self.Q_network.state_dict())
+
+    def save(self):
+        torch.save(self.Q_network.state_dict(), "./train_results/agent_over_options.pth")
+
+    def load(self):
+        self.Q_network.load_state_dict(torch.load("./train_results/agent_over_options.pth"))
+        self.eps = 0  # since we load, it should be 0 because we are not training anymore

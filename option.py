@@ -12,6 +12,7 @@ class Option:
         self.min_examples_to_refine = min_examples_to_refine
         self.N = N
         self.K = K
+        self._frozen = None
 
         if self.name == "global" or self.name == "goal":
             assert parent_option is None, "global and goal options cant have parent option"
@@ -72,7 +73,7 @@ class Option:
 
         local_done = False
         while t < self.budget:
-            action = self.agent.act(obs, desired_goal)
+            action = self.agent.act(obs, desired_goal, train_mode=not self._frozen)
             next_env_dict, reward, done, _ = self.env.step(action)
             reward_list.append(reward)
 
@@ -93,27 +94,31 @@ class Option:
 
             t += 1
 
-        episode_dict["state"].append(obs)
-        episode_dict["achieved_goal"].append(achieved_goal)
-        episode_dict["desired_goal"].append(desired_goal)
-        episode_dict["next_state"] = episode_dict["state"][1:]
-        episode_dict["next_achieved_goal"] = episode_dict["achieved_goal"][1:]
+            if self._frozen and local_done:
+                break
 
-        self.agent.store(deepcopy(episode_dict))
-        for _ in range(self.budget):
-            self.agent.train()
+        if not self._frozen:
+            episode_dict["state"].append(obs)
+            episode_dict["achieved_goal"].append(achieved_goal)
+            episode_dict["desired_goal"].append(desired_goal)
+            episode_dict["next_state"] = episode_dict["state"][1:]
+            episode_dict["next_achieved_goal"] = episode_dict["achieved_goal"][1:]
 
-        self.agent.update_networks()
+            self.agent.store(deepcopy(episode_dict))
+            for _ in range(self.budget):
+                self.agent.train()
 
-        if self.name != "global":
-            if local_done:
-                self.good_examples_to_refine.append(starting_obs)
-            else:
-                self.bad_examples_to_refine.append(starting_obs)
+            self.agent.update_networks()
 
-            # TODO: from now on, refining shouldn't be limited to just 1, a couple of per option maybe?
-            if not self.initiation_classifier_refined and len(self.good_examples_to_refine) >= self.min_examples_to_refine and len(self.bad_examples_to_refine) >= self.min_examples_to_refine:
-                self.refine_inititation_classifier()
+            if self.name != "global":
+                if local_done:
+                    self.good_examples_to_refine.append(starting_obs)
+                else:
+                    self.bad_examples_to_refine.append(starting_obs)
+
+                # TODO: from now on, refining shouldn't be limited to just 1, a couple of per option maybe?
+                if not self.initiation_classifier_refined and len(self.good_examples_to_refine) >= self.min_examples_to_refine and len(self.bad_examples_to_refine) >= self.min_examples_to_refine:
+                    self.refine_inititation_classifier()
 
         return next_env_dict, reward_list, done
 
@@ -141,3 +146,12 @@ class Option:
         self.initiation_classifier.train_two_class(self.good_examples_to_refine, self.bad_examples_to_refine)
         self.initiation_classifier_refined = True
         print(f"option {self.name}: initiation classifier refined")
+
+    def freeze(self):
+        self._frozen = True
+        self.successful_observations_to_create_initiation_classifier = []
+        self.good_examples_to_refine = []
+        self.bad_examples_to_refine = []
+
+    def save(self):
+        assert self._frozen, "option should be frozen to be saved"
