@@ -112,6 +112,9 @@ def train():
 
         print(f"{episode_num}/{hyperparams['max_episodes']}")
 
+        # if time() - start >= 150:
+        #     break
+
     end = time()
     print("training completed, elapsed time: ", end-start)
 
