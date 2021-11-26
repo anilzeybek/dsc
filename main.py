@@ -3,7 +3,7 @@ from copy import deepcopy
 from meta_dqn.meta_dqn_agent import MetaDQNAgent
 from option import Option
 from typing import Any, Dict
-from custom_env import CustomEnv
+from custom_env.custom_env_discrete import CustomEnvDiscrete as Env
 import os
 import pickle
 import sys
@@ -27,7 +27,7 @@ def is_initial_state_covered(initial_state, option_repertoire):
 
 
 def eval():
-    env = CustomEnv()
+    env = Env()
     with open(f"./train_results/options.pickle", 'rb') as f:
         option_repertoire = pickle.load(f)
 
@@ -57,11 +57,11 @@ def train():
     start = time()
 
     hyperparams = read_hyperparams()
-    env = CustomEnv()
+    env = Env()
     initial_state = deepcopy(env.reset()['observation'])
     initial_state_covered = False
 
-    action_type = 'discrete' if env.action_space == gym.spaces.Discrete else 'continuous'
+    action_type = 'discrete' if isinstance(env.action_space, gym.spaces.Discrete) else 'continuous'
     global_option = Option("global", action_type, budget=1, env=env, parent_option=None, min_examples_to_refine=hyperparams['min_examples_to_refine'],
                            N=hyperparams['N'], K=hyperparams['K'])
     goal_option = Option("goal", action_type, budget=hyperparams['budget'], env=env, parent_option=None,

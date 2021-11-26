@@ -25,5 +25,5 @@ class DuelingNetwork(nn.Module):
         a = F.relu(self.a1(x))
         a = self.a2(a)
 
-        Q = v + a - a.mean(dim=1, keepdim=True)
+        Q = v + a - a.mean(dim=0, keepdim=True)
         return Q

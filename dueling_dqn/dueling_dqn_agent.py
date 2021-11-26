@@ -17,6 +17,7 @@ class DuelingDQNAgent:
 
         self.hyperparams = self._read_hyperparams()['local_agent_discrete']
 
+        self.eps = self.hyperparams['eps_start']
         self.k_future = self.hyperparams['k_future']
 
         self.model = DuelingNetwork(self.state_dim, self.action_dim, goal_dim=self.goal_dim,
@@ -39,23 +40,15 @@ class DuelingDQNAgent:
             return hyperparams
 
     def act(self, state, goal, train_mode=True):
-        state = np.expand_dims(state, axis=0)
-        goal = np.expand_dims(goal, axis=0)
+        if train_mode and np.random.rand() < self.eps:
+            action = np.random.choice(self.action_dim)
+        else:
+            with torch.no_grad():
+                x = np.concatenate([state, goal])
+                obs = torch.from_numpy(x).float()
+                action = self.model(obs).numpy().argmax()
 
-        with torch.no_grad():
-            x = np.concatenate([state, goal], axis=1)
-            x = torch.from_numpy(x).float()
-            action = self.model(x)[0].numpy()
-
-        if train_mode:
-            # TODO: here will change
-            action += self.action_bounds[1] / 5 * np.random.randn(self.action_dim)
-            action = np.clip(action, self.action_bounds[0], self.action_bounds[1])
-
-            random_actions = np.random.uniform(low=self.action_bounds[0], high=self.action_bounds[1],
-                                               size=self.action_dim)
-            action += np.random.binomial(1, 0.3, 1)[0] * (random_actions - action)
-
+        self.eps = max(self.hyperparams['eps_end'], self.hyperparams['eps_decay'] * self.eps)
         return action
 
     def store(self, episode_dict):
@@ -72,14 +65,14 @@ class DuelingDQNAgent:
         inputs = np.concatenate([states, goals], axis=1)
         next_inputs = np.concatenate([next_states, goals], axis=1)
 
-        inputs = torch.Tensor(inputs)
-        rewards = torch.Tensor(rewards)
-        next_inputs = torch.Tensor(next_inputs)
-        actions = torch.Tensor(actions)
+        inputs = torch.Tensor(inputs).float()
+        rewards = torch.Tensor(rewards).float()
+        next_inputs = torch.Tensor(next_inputs).float()
+        actions = torch.Tensor(actions).long()
 
         Q_current = self.model(inputs).gather(1, actions)
         with torch.no_grad():
-            a = self.model(next_states).argmax(1).unsqueeze(1)
+            a = self.model(next_inputs).argmax(1).unsqueeze(1)
             Q_target_next = self.model_target(next_inputs).gather(1, a)
             Q_target = rewards + self.gamma * Q_target_next
 

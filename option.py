@@ -5,7 +5,7 @@ from classifier import Classifier
 
 
 class Option:
-    def __init__(self, name, action_type, budget: int, env, parent_option, min_examples_to_refine, N, K) -> None:
+    def __init__(self, name, action_type, budget, env, parent_option, min_examples_to_refine, N, K) -> None:
         self.name = name
         self.action_type = action_type
         self.budget = budget
@@ -24,8 +24,7 @@ class Option:
             self.agent = DDPGAgent(3, self.env.action_space.shape[0], env.observation_space["desired_goal"].shape[0],
                                    [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
         else:
-            self.agent = DuelingDQNAgent(3, self.env.action_space.shape[0], env.observation_space["desired_goal"].shape[0],
-                                         env.computer_reward)
+            self.agent = DuelingDQNAgent(3, self.env.action_space.n, env.observation_space["desired_goal"].shape[0], env.compute_reward)
 
         if parent_option:
             assert self.name != "global" or self.name != "goal"

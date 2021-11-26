@@ -3,21 +3,21 @@ import numpy as np
 from copy import deepcopy
 
 
-class CustomEnv:
+class CustomEnvDiscrete:
     def __init__(self):
         self.observation_space = {
-            "observation": spaces.Box(0.0, np.inf, (3,), np.float32),
-            "achieved_goal": spaces.Box(0.0, np.inf, (3,), np.float32),
-            "desired_goal": spaces.Box(0.0, np.inf, (3,), np.float32),
+            "observation": spaces.Box(0, np.inf, (3,), np.int32),
+            "achieved_goal": spaces.Box(0, np.inf, (3,), np.int32),
+            "desired_goal": spaces.Box(0, np.inf, (3,), np.int32),
         }
-        self.action_space = spaces.Box(-1.0, 1.0, (3,), np.float32)
+        self.action_space = spaces.Discrete(6)
 
-        self.start_pos = np.array([0.0, 0.0, 0.0], dtype=np.float32)
-        self.goal_pos = np.array([20.0, 30.0, 40.0], dtype=np.float32)
-        self.current_pos = np.array([0.0, 0.0, 0.0], dtype=np.float32)
+        self.start_pos = np.array([0, 0, 0], dtype=np.int32)
+        self.goal_pos = np.array([20, 30, 40], dtype=np.int32)
+        self.current_pos = np.array([0, 0, 0], dtype=np.int32)
 
         self.step_count = 0
-        self.max_step_count = 100
+        self.max_step_count = 200
 
     def compute_reward(self, achieved, desired, _):
         return (1 * self._is_close(achieved, desired)) - 1
@@ -51,15 +51,25 @@ class CustomEnv:
         assert self.action_space.contains(action), "action is not valid"
         self.step_count += 1
 
-        self.current_pos[0] += action[0]
+        if action == 0:
+            self.current_pos[0] += 1
+        elif action == 1:
+            self.current_pos[0] -= 1
+        elif action == 2:
+            self.current_pos[1] += 1
+        elif action == 3:
+            self.current_pos[1] -= 1
+        elif action == 4:
+            self.current_pos[2] += 1
+        elif action == 5:
+            self.current_pos[2] -= 1
+
         if self.current_pos[0] < 0:
             self.current_pos[0] = 0
 
-        self.current_pos[1] += action[1]
         if self.current_pos[1] < 0:
             self.current_pos[1] = 0
 
-        self.current_pos[2] += action[2]
         if self.current_pos[2] < 0:
             self.current_pos[2] = 0
 
