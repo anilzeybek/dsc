@@ -82,8 +82,8 @@ class DuelingDQNAgent:
         loss.backward()
         self.model_optimizer.step()
 
-    def load_global_weights(self, global_network):
-        self.model.load_state_dict(global_network.state_dict())
+    def load_global_weights(self, global_agent):
+        self.model.load_state_dict(global_agent.model.state_dict())
         self.model_target = deepcopy(self.model)
 
     def save_weights(self, name):

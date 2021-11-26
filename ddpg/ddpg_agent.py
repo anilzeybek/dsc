@@ -101,11 +101,11 @@ class DDPGAgent:
         critic_loss.backward()
         self.critic_optimizer.step()
 
-    def load_global_weights(self, global_actor_network, global_critic_network):
-        self.actor.load_state_dict(global_actor_network.state_dict())
+    def load_global_weights(self, global_agent):
+        self.actor.load_state_dict(global_agent.actor.state_dict())
         self.actor_target = deepcopy(self.actor)
 
-        self.critic.load_state_dict(global_critic_network.state_dict())
+        self.critic.load_state_dict(global_agent.critic.state_dict())
         self.critic_target = deepcopy(self.critic)
 
     def save_weights(self, name):

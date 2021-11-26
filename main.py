@@ -97,7 +97,8 @@ def train():
 
                     created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before, initial_state)
                     if created:
-                        option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor, global_option.agent.critic)
+
+                        option_without_initiation_classifier.agent.load_global_weights(global_option.agent)
                         agent_over_options.add_option()
                         option_repertoire.append(option_without_initiation_classifier)
                         option_without_initiation_classifier = Option(str(agent_no), action_type, hyperparams['budget'], env=env, parent_option=option_without_initiation_classifier,
