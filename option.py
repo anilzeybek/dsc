@@ -1,11 +1,13 @@
 from copy import deepcopy
 from ddpg.ddpg_agent import DDPGAgent
+from dueling_dqn.dueling_dqn_agent import DuelingDQNAgent
 from classifier import Classifier
 
 
 class Option:
-    def __init__(self, name, budget: int, env, parent_option, min_examples_to_refine, N, K) -> None:
+    def __init__(self, name, action_type, budget: int, env, parent_option, min_examples_to_refine, N, K) -> None:
         self.name = name
+        self.action_type = action_type
         self.budget = budget
         self.env = env
         self.parent_option = parent_option
@@ -14,11 +16,17 @@ class Option:
         self.K = K
         self._frozen = None
 
+        assert self.action_type in ['discrete', 'continuous'], "action_type must be either discrete or continuous"
         if self.name == "global" or self.name == "goal":
             assert parent_option is None, "global and goal options cant have parent option"
 
-        self.agent = DDPGAgent(3, self.env.action_space.shape[0], env.observation_space["desired_goal"].shape[0],
-                               [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
+        if self.action_type == "continuous":
+            self.agent = DDPGAgent(3, self.env.action_space.shape[0], env.observation_space["desired_goal"].shape[0],
+                                   [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
+        else:
+            self.agent = DuelingDQNAgent(3, self.env.action_space.shape[0], env.observation_space["desired_goal"].shape[0],
+                                         env.computer_reward)
+
         if parent_option:
             assert self.name != "global" or self.name != "goal"
             assert parent_option.initiation_classifier_created, "if parent provided, its initiation classifier should be created"

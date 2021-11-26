@@ -1,12 +1,13 @@
 import json
 from copy import deepcopy
-from dqn.dqn_agent import DQNAgent
+from meta_dqn.meta_dqn_agent import MetaDQNAgent
 from option import Option
 from typing import Any, Dict
 from custom_env import CustomEnv
 import os
 import pickle
 import sys
+import gym
 from time import time
 
 
@@ -26,13 +27,6 @@ def is_initial_state_covered(initial_state, option_repertoire):
 
 
 def eval():
-    # option_repertoire = []
-
-    # result_files = os.listdir("./train_results")
-    # for f_name in result_files:
-    #     if f_name.split('.')[-1] == "pickle":
-    #         with open(f"./train_results/{f_name}", 'rb') as f:
-    #             option_repertoire.append(pickle.load(f))
     env = CustomEnv()
     with open(f"./train_results/options.pickle", 'rb') as f:
         option_repertoire = pickle.load(f)
@@ -40,7 +34,7 @@ def eval():
     for o in option_repertoire:
         o.env = env
 
-    agent_over_options = DQNAgent(obs_size=3, action_size=len(option_repertoire))
+    agent_over_options = MetaDQNAgent(obs_size=3, action_size=len(option_repertoire))
     agent_over_options.load()
 
     while True:
@@ -67,15 +61,16 @@ def train():
     initial_state = deepcopy(env.reset()['observation'])
     initial_state_covered = False
 
-    global_option = Option("global", budget=1, env=env, parent_option=None, min_examples_to_refine=hyperparams['min_examples_to_refine'],
+    action_type = 'discrete' if env.action_space == gym.spaces.Discrete else 'continuous'
+    global_option = Option("global", action_type, budget=1, env=env, parent_option=None, min_examples_to_refine=hyperparams['min_examples_to_refine'],
                            N=hyperparams['N'], K=hyperparams['K'])
-    goal_option = Option("goal", budget=hyperparams['budget'], env=env, parent_option=None,
+    goal_option = Option("goal", action_type, budget=hyperparams['budget'], env=env, parent_option=None,
                          min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
 
     option_repertoire = [global_option]
     option_without_initiation_classifier = goal_option
 
-    agent_over_options = DQNAgent(obs_size=3, action_size=len(option_repertoire))
+    agent_over_options = MetaDQNAgent(obs_size=3, action_size=len(option_repertoire))
     agent_no = 2  # to match the option index
 
     for episode_num in range(hyperparams['max_episodes']):
@@ -105,7 +100,7 @@ def train():
                         option_without_initiation_classifier.agent.load_global_weights(global_option.agent.actor, global_option.agent.critic)
                         agent_over_options.add_option()
                         option_repertoire.append(option_without_initiation_classifier)
-                        option_without_initiation_classifier = Option(str(agent_no), hyperparams['budget'], env=env, parent_option=option_without_initiation_classifier,
+                        option_without_initiation_classifier = Option(str(agent_no), action_type, hyperparams['budget'], env=env, parent_option=option_without_initiation_classifier,
                                                                       min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
                         agent_no += 1
                         initial_state_covered = is_initial_state_covered(initial_state, option_repertoire[1:])

@@ -15,7 +15,7 @@ class DDPGAgent:
         self.action_bounds = action_bounds
         self.compute_reward_func = compute_reward_func
 
-        self.hyperparams = self._read_hyperparams()['local_agent']
+        self.hyperparams = self._read_hyperparams()['local_agent_continuous']
 
         self.k_future = self.hyperparams['k_future']
 

@@ -10,7 +10,7 @@ from .replay_buffer import ReplayBuffer
 from copy import deepcopy
 
 
-class DQNAgent:
+class MetaDQNAgent:
     def __init__(self, obs_size, action_size) -> None:
         self.obs_size = obs_size
         self.action_size = action_size
