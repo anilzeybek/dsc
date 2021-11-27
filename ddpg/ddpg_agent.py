@@ -75,15 +75,17 @@ class DDPGAgent:
 
         inputs = np.concatenate([states, goals], axis=1)
         next_inputs = np.concatenate([next_states, goals], axis=1)
+        dones = rewards + 1
 
         inputs = torch.Tensor(inputs)
         rewards = torch.Tensor(rewards)
         next_inputs = torch.Tensor(next_inputs)
         actions = torch.Tensor(actions)
+        dones = torch.Tensor(dones).long()
 
         with torch.no_grad():
             target_q = self.critic_target(next_inputs, self.actor_target(next_inputs))
-            target_returns = rewards + self.gamma * target_q
+            target_returns = rewards + self.gamma * target_q * (1 - dones)
             target_returns = torch.clamp(target_returns, -1 / (1 - self.gamma), 0)
 
         q_eval = self.critic(inputs, actions)

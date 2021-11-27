@@ -3,7 +3,7 @@ from copy import deepcopy
 from meta_dqn.meta_dqn_agent import MetaDQNAgent
 from option import Option
 from typing import Any, Dict
-from custom_env.custom_env_discrete import CustomEnvDiscrete as Env
+from custom_env.custom_env_continuous import CustomEnvContinuous as Env
 import os
 import pickle
 import sys
@@ -135,3 +135,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# TODO: we can add random goals FOR GLOBAL in train instead of the always same goal for better HER

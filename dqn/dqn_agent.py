@@ -21,8 +21,7 @@ class DQNAgent:
         self.k_future = self.hyperparams['k_future']
 
         self.model = QNetwork(self.state_dim, self.action_dim, goal_dim=self.goal_dim,
-                                    hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'],
-                                    hidden_3=self.hyperparams['hidden_3'])
+                              hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'])
         self.model_target = deepcopy(self.model)
         self.tau = self.hyperparams['tau']
         self.gamma = self.hyperparams['gamma']
@@ -66,17 +65,19 @@ class DQNAgent:
 
         inputs = np.concatenate([states, goals], axis=1)
         next_inputs = np.concatenate([next_states, goals], axis=1)
+        dones = rewards + 1
 
         inputs = torch.Tensor(inputs).float()
         rewards = torch.Tensor(rewards).float()
         next_inputs = torch.Tensor(next_inputs).float()
         actions = torch.Tensor(actions).long()
+        dones = torch.Tensor(dones).long()
 
         Q_current = self.model(inputs).gather(1, actions)
         with torch.no_grad():
             a = self.model(next_inputs).argmax(1).unsqueeze(1)
             Q_target_next = self.model_target(next_inputs).gather(1, a)
-            Q_target = rewards + self.gamma * Q_target_next
+            Q_target = rewards + self.gamma * Q_target_next * (1 - dones)
 
         loss = F.mse_loss(Q_current, Q_target)
 

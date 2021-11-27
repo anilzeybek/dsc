@@ -17,7 +17,7 @@ class CustomEnvDiscrete:
         self.current_pos = np.array([0.0, 0.0, 0.0], dtype=np.float32)
 
         self.step_count = 0
-        self.max_step_count = 200
+        self.max_step_count = 250
 
     def compute_reward(self, achieved, desired, _):
         return (1 * self._is_close(achieved, desired)) - 1
@@ -45,7 +45,7 @@ class CustomEnvDiscrete:
             pos1 = np.expand_dims(pos1, axis=0)
             pos2 = np.expand_dims(pos2, axis=0)
 
-        return np.linalg.norm(pos1 - pos2, axis=1) < 1
+        return np.all(pos1 == pos2, axis=1)
 
     def step(self, action):
         assert self.action_space.contains(action), "action is not valid"
