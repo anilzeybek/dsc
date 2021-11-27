@@ -38,8 +38,7 @@
         "eps_start": 1.0,
         "eps_end": 0.01,
         "eps_decay": 0.995,
-        "hidden_1": 64,
-        "hidden_2": 64,
-        "hidden_3": 32
+        "hidden_1": 128,
+        "hidden_2": 128
     }
 }

@@ -1,6 +1,6 @@
 from copy import deepcopy
 from ddpg.ddpg_agent import DDPGAgent
-from dueling_dqn.dueling_dqn_agent import DuelingDQNAgent
+from dqn.dqn_agent import DQNAgent
 from classifier import Classifier
 
 
@@ -24,7 +24,7 @@ class Option:
             self.agent = DDPGAgent(3, self.env.action_space.shape[0], env.observation_space["desired_goal"].shape[0],
                                    [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
         else:
-            self.agent = DuelingDQNAgent(3, self.env.action_space.n, env.observation_space["desired_goal"].shape[0], env.compute_reward)
+            self.agent = DQNAgent(3, self.env.action_space.n, env.observation_space["desired_goal"].shape[0], env.compute_reward)
 
         if parent_option:
             assert self.name != "global" or self.name != "goal"
@@ -126,6 +126,9 @@ class Option:
                 # TODO: from now on, refining shouldn't be limited to just 1, a couple of per option maybe?
                 if not self.initiation_classifier_refined and len(self.good_examples_to_refine) >= self.min_examples_to_refine and len(self.bad_examples_to_refine) >= self.min_examples_to_refine:
                     self.refine_inititation_classifier()
+
+        if done and self.action_type == "discrete":
+            self.agent.update_eps()
 
         return next_env_dict, reward_list, done
 

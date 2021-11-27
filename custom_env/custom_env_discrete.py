@@ -6,15 +6,15 @@ from copy import deepcopy
 class CustomEnvDiscrete:
     def __init__(self):
         self.observation_space = {
-            "observation": spaces.Box(0, np.inf, (3,), np.int32),
-            "achieved_goal": spaces.Box(0, np.inf, (3,), np.int32),
-            "desired_goal": spaces.Box(0, np.inf, (3,), np.int32),
+            "observation": spaces.Box(0.0, np.inf, (3,), np.float32),
+            "achieved_goal": spaces.Box(0.0, np.inf, (3,), np.float32),
+            "desired_goal": spaces.Box(0.0, np.inf, (3,), np.float32),
         }
         self.action_space = spaces.Discrete(6)
 
-        self.start_pos = np.array([0, 0, 0], dtype=np.int32)
-        self.goal_pos = np.array([20, 30, 40], dtype=np.int32)
-        self.current_pos = np.array([0, 0, 0], dtype=np.int32)
+        self.start_pos = np.array([0.0, 0.0, 0.0], dtype=np.float32)
+        self.goal_pos = np.array([20.0, 30.0, 40.0], dtype=np.float32)
+        self.current_pos = np.array([0.0, 0.0, 0.0], dtype=np.float32)
 
         self.step_count = 0
         self.max_step_count = 200

@@ -3,12 +3,12 @@ import json
 import numpy as np
 from torch.optim import Adam
 import torch.nn.functional as F
-from .model import DuelingNetwork
+from .model import QNetwork
 from .memory import Memory
 from copy import deepcopy
 
 
-class DuelingDQNAgent:
+class DQNAgent:
     def __init__(self, state_dim, action_dim, goal_dim, compute_reward_func):
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -20,7 +20,7 @@ class DuelingDQNAgent:
         self.eps = self.hyperparams['eps_start']
         self.k_future = self.hyperparams['k_future']
 
-        self.model = DuelingNetwork(self.state_dim, self.action_dim, goal_dim=self.goal_dim,
+        self.model = QNetwork(self.state_dim, self.action_dim, goal_dim=self.goal_dim,
                                     hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'],
                                     hidden_3=self.hyperparams['hidden_3'])
         self.model_target = deepcopy(self.model)
@@ -48,8 +48,10 @@ class DuelingDQNAgent:
                 obs = torch.from_numpy(x).float()
                 action = self.model(obs).numpy().argmax()
 
-        self.eps = max(self.hyperparams['eps_end'], self.hyperparams['eps_decay'] * self.eps)
         return action
+
+    def update_eps(self):
+        self.eps = max(self.hyperparams['eps_end'], self.hyperparams['eps_decay'] * self.eps)
 
     def store(self, episode_dict):
         self.memory.add(episode_dict)
