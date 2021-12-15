@@ -57,6 +57,7 @@ def train():
     start = time()
 
     hyperparams = read_hyperparams()
+    # env = gym.make("Point4Rooms-v1")
     env = Env()
     initial_state = deepcopy(env.reset()['observation'])
     initial_state_covered = False

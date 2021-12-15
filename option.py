@@ -5,7 +5,7 @@ from classifier import Classifier
 
 
 class Option:
-    def __init__(self, name, action_type, budget, env, parent_option, min_examples_to_refine, req_num_to_create_init) -> None:
+    def __init__(self, name, action_type, budget, env, parent_option, min_examples_to_refine, req_num_to_create_init):
         self.name = name
         self.action_type = action_type
         self.budget = budget

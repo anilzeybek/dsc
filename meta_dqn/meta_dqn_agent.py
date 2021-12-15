@@ -2,7 +2,7 @@ import json
 from typing import Any, Dict
 import numpy as np
 import torch
-import torch.nn.functional as F
+import torch.nn.functional as f
 import torch.optim as optim
 
 from .model import QNetwork
@@ -16,7 +16,8 @@ class MetaDQNAgent:
         self.action_size = action_size
         self.hyperparams = self._read_hyperparams()['agent_over_options']
 
-        self.Q_network = QNetwork(self.obs_size, self.action_size, self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
+        self.Q_network = QNetwork(self.obs_size, self.action_size, self.hyperparams['hidden_1'],
+                                  self.hyperparams['hidden_2'])
         self.target_network = deepcopy(self.Q_network)
         self.optimizer = optim.Adam(self.Q_network.parameters(), lr=self.hyperparams['lr'])
 
@@ -29,15 +30,17 @@ class MetaDQNAgent:
         self.action_size += 1
         self.Q_network.change_last_layer(self.action_size)
 
-        new_Q_network = QNetwork(self.obs_size, self.action_size, self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
+        new_Q_network = QNetwork(self.obs_size, self.action_size, self.hyperparams['hidden_1'],
+                                 self.hyperparams['hidden_2'])
         new_Q_network.load_state_dict(self.Q_network.state_dict())
         # TODO: (LATER) assign appropriate initial values for new layer, maybe its achievable by resetting epsilon?
         self.Q_network = new_Q_network
         self.target_network = deepcopy(self.Q_network)
 
-    def _read_hyperparams(self) -> Dict[str, Any]:
-        with open('hyperparams.json') as f:
-            hyperparams = json.load(f)
+    @staticmethod
+    def _read_hyperparams() -> Dict[str, Any]:
+        with open('hyperparams.json') as file:
+            hyperparams = json.load(file)
             return hyperparams
 
     def act(self, obs, option_repertoire):
@@ -89,7 +92,7 @@ class MetaDQNAgent:
             discounted_reward = torch.from_numpy(discounted_reward).float()
             Q_target = discounted_reward + (self.hyperparams['gamma'] ** len(rewards_lists)) * Q_target_next * (1 - dones)
 
-        loss = F.mse_loss(Q_current, Q_target)
+        loss = f.mse_loss(Q_current, Q_target)
 
         self.optimizer.zero_grad()
         loss.backward()

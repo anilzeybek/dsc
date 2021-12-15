@@ -1,10 +1,10 @@
 from torch import nn
 import torch
-from torch.nn import functional as F
+from torch.nn import functional as f
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim, action_dim, goal_dim, hidden_1=256, hidden_2=256, action_bounds=[-1, 1]):
+    def __init__(self, state_dim, action_dim, goal_dim, hidden_1=256, hidden_2=256, action_bounds=(-1, 1)):
         super(Actor, self).__init__()
 
         self.state_dim = state_dim
@@ -19,8 +19,8 @@ class Actor(nn.Module):
         self.output = nn.Linear(self.hidden_2, self.action_dim)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = f.relu(self.fc1(x))
+        x = f.relu(self.fc2(x))
         output = torch.tanh(self.output(x)) * self.action_bounds[1]
 
         return output
@@ -41,8 +41,8 @@ class Critic(nn.Module):
         self.output = nn.Linear(self.hidden_2, 1)
 
     def forward(self, x, a):
-        x = F.relu(self.fc1(torch.cat([x, a], dim=-1)))
-        x = F.relu(self.fc2(x))
+        x = f.relu(self.fc1(torch.cat([x, a], dim=-1)))
+        x = f.relu(self.fc2(x))
         output = self.output(x)
 
         return output

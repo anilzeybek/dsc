@@ -2,7 +2,7 @@ import torch
 import json
 import numpy as np
 from torch.optim import Adam
-import torch.nn.functional as F
+import torch.nn.functional as f
 from .model import QNetwork
 from .memory import Memory
 from copy import deepcopy
@@ -33,9 +33,10 @@ class DQNAgent:
         self.lr = self.hyperparams['lr']
         self.model_optimizer = Adam(self.model.parameters(), self.lr)
 
-    def _read_hyperparams(self):
-        with open('hyperparams.json') as f:
-            hyperparams = json.load(f)
+    @staticmethod
+    def _read_hyperparams():
+        with open('hyperparams.json') as file:
+            hyperparams = json.load(file)
             return hyperparams
 
     def act(self, state, goal, train_mode=True):
@@ -79,7 +80,7 @@ class DQNAgent:
             Q_target_next = self.model_target(next_inputs).gather(1, a)
             Q_target = rewards + self.gamma * Q_target_next * (1 - dones)
 
-        loss = F.mse_loss(Q_current, Q_target)
+        loss = f.mse_loss(Q_current, Q_target)
 
         self.model_optimizer.zero_grad()
         loss.backward()
