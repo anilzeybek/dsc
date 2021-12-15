@@ -8,6 +8,7 @@ import os
 import pickle
 import sys
 import gym
+import mujoco_maze
 from time import time
 
 
@@ -34,7 +35,7 @@ def test():
     for o in option_repertoire:
         o.env = env
 
-    agent_over_options = MetaDQNAgent(obs_size=3, action_size=len(option_repertoire))
+    agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0], action_size=len(option_repertoire))
     agent_over_options.load()
 
     while True:
@@ -57,8 +58,8 @@ def train():
     start = time()
 
     hyperparams = read_hyperparams()
-    # env = gym.make("Point4Rooms-v1")
     env = Env()
+    # env = gym.make("Point4Rooms-v1")
     initial_state = deepcopy(env.reset()['observation'])
     initial_state_covered = False
 
@@ -73,7 +74,7 @@ def train():
     option_repertoire = [global_option]
     option_without_initiation_classifier = goal_option
 
-    agent_over_options = MetaDQNAgent(obs_size=3, action_size=len(option_repertoire))
+    agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0], action_size=len(option_repertoire))
     agent_no = 2  # to match the option index
 
     for episode_num in range(hyperparams['max_episodes']):

@@ -20,11 +20,10 @@ class Option:
             assert parent_option is None, "global and goal options cant have parent option"
 
         if self.action_type == "continuous":
-            self.agent = DDPGAgent(3, self.env.action_space.shape[0], env.observation_space["desired_goal"].shape[0],
-                                   [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
+            self.agent = DDPGAgent(env.observation_space["observation"].shape[0], env.action_space.shape[0],
+                                   env.observation_space["desired_goal"].shape[0], [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
         else:
-            self.agent = DQNAgent(3, self.env.action_space.n, env.observation_space["desired_goal"].shape[0],
-                                  env.compute_reward)
+            self.agent = DQNAgent(env.observation_space["observation"].shape[0], env.action_space.n, env.observation_space["desired_goal"].shape[0], env.compute_reward)
 
         if parent_option:
             assert self.name != "global" or self.name != "goal"
@@ -78,8 +77,7 @@ class Option:
         }
         obs = env_dict["observation"]
         achieved_goal = env_dict["achieved_goal"]
-        desired_goal = env_dict[
-            "desired_goal"] if self.name == "global" or self.name == "goal" else self.termination_classifier.sample()
+        desired_goal = env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else self.termination_classifier.sample()
 
         reward_list = []
 
