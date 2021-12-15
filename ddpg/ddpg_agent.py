@@ -38,7 +38,8 @@ class DDPGAgent:
         self.actor_optimizer = Adam(self.actor.parameters(), self.actor_lr)
         self.critic_optimizer = Adam(self.critic.parameters(), self.critic_lr)
 
-    def _read_hyperparams(self):
+    @staticmethod
+    def _read_hyperparams():
         with open('hyperparams.json') as f:
             hyperparams = json.load(f)
             return hyperparams

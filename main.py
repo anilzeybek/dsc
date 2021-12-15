@@ -62,10 +62,12 @@ def train():
     initial_state_covered = False
 
     action_type = 'discrete' if isinstance(env.action_space, gym.spaces.Discrete) else 'continuous'
-    global_option = Option("global", action_type, budget=1, env=env, parent_option=None, min_examples_to_refine=hyperparams['min_examples_to_refine'],
+    global_option = Option("global", action_type, budget=1, env=env, parent_option=None,
+                           min_examples_to_refine=hyperparams['min_examples_to_refine'],
                            N=hyperparams['N'], K=hyperparams['K'])
     goal_option = Option("goal", action_type, budget=hyperparams['budget'], env=env, parent_option=None,
-                         min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
+                         min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'],
+                         K=hyperparams['K'])
 
     option_repertoire = [global_option]
     option_without_initiation_classifier = goal_option
@@ -84,25 +86,35 @@ def train():
                 obs_history.append(env_dict['observation'])
 
             next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict)
-            agent_over_options.step(env_dict['observation'], option_index, reward_list, next_env_dict['observation'], done)
+            agent_over_options.step(env_dict['observation'], option_index, reward_list,
+                                    next_env_dict['observation'], done)
 
             env_dict = deepcopy(next_env_dict)
 
             if not initial_state_covered:
-                if option_without_initiation_classifier.termination_classifier.check(env_dict['observation']) and not option_without_initiation_classifier.initiation_classifier_created:
+                if option_without_initiation_classifier.termination_classifier.check(env_dict['observation']) \
+                        and not option_without_initiation_classifier.initiation_classifier_created:
                     try:
                         k_steps_before = obs_history[-hyperparams['K']]
                     except IndexError:
                         k_steps_before = obs_history[0]
 
-                    created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before, initial_state)
+                    created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before,
+                                                                                                initial_state)
                     if created:
-
                         option_without_initiation_classifier.agent.load_global_weights(global_option.agent)
                         agent_over_options.add_option()
                         option_repertoire.append(option_without_initiation_classifier)
-                        option_without_initiation_classifier = Option(str(agent_no), action_type, hyperparams['budget'], env=env, parent_option=option_without_initiation_classifier,
-                                                                      min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'], K=hyperparams['K'])
+                        option_without_initiation_classifier = Option(
+                            str(agent_no),
+                            action_type,
+                            hyperparams['budget'],
+                            env=env,
+                            parent_option=option_without_initiation_classifier,
+                            min_examples_to_refine=hyperparams['min_examples_to_refine'],
+                            N=hyperparams['N'],
+                            K=hyperparams['K']
+                        )
                         agent_no += 1
                         initial_state_covered = is_initial_state_covered(initial_state, option_repertoire[1:])
 
@@ -112,7 +124,7 @@ def train():
         #     break
 
     end = time()
-    print("training completed, elapsed time: ", end-start)
+    print("training completed, elapsed time: ", end - start)
 
     for o in option_repertoire:
         o.freeze()
@@ -135,6 +147,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
 
 # TODO: we can add random goals FOR GLOBAL in train instead of the always same goal for better HER
