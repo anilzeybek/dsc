@@ -40,7 +40,8 @@ class CustomEnvContinuous:
             "desired_goal": deepcopy(self.goal_pos)
         }
 
-    def _is_close(self, pos1, pos2):
+    @staticmethod
+    def _is_close(pos1, pos2):
         if pos1.ndim == 1 and pos2.ndim == 1:
             pos1 = np.expand_dims(pos1, axis=0)
             pos2 = np.expand_dims(pos2, axis=0)

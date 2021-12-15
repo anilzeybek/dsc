@@ -5,15 +5,14 @@ from classifier import Classifier
 
 
 class Option:
-    def __init__(self, name, action_type, budget, env, parent_option, min_examples_to_refine, N, K) -> None:
+    def __init__(self, name, action_type, budget, env, parent_option, min_examples_to_refine, req_num_to_create_init) -> None:
         self.name = name
         self.action_type = action_type
         self.budget = budget
         self.env = env
         self.parent_option = parent_option
         self.min_examples_to_refine = min_examples_to_refine
-        self.N = N
-        self.K = K
+        self.req_num_to_create_init = req_num_to_create_init
         self._frozen = None
 
         assert self.action_type in ['discrete', 'continuous'], "action_type must be either discrete or continuous"
@@ -154,7 +153,7 @@ class Option:
         if successful_observation is not None:
             self.successful_observations_to_create_initiation_classifier.append(successful_observation)
 
-        if len(self.successful_observations_to_create_initiation_classifier) == self.N:
+        if len(self.successful_observations_to_create_initiation_classifier) == self.req_num_to_create_init:
             self.initiation_classifier.train_one_class(self.successful_observations_to_create_initiation_classifier,
                                                        initial_state)
             self.initiation_classifier_created = True
@@ -176,6 +175,3 @@ class Option:
         self.successful_observations_to_create_initiation_classifier = []
         self.good_examples_to_refine = []
         self.bad_examples_to_refine = []
-
-    def save(self):
-        assert self._frozen, "option should be frozen to be saved"

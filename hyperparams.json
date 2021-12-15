@@ -1,7 +1,7 @@
 {
     "budget": 20,
-    "N": 15,
-    "K": 10,
+    "req_num_to_create_init": 15,
+    "num_steps_before": 10,
     "min_examples_to_refine": 30,
     "max_episodes": 250,
     "agent_over_options": {

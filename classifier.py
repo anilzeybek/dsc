@@ -21,6 +21,7 @@ class Classifier:
         self.one_class_trained = False
         self.one_class_refined = False
         self.good_examples_to_sample = []
+        self.initial_state = None
 
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
             assert self.env_termination_checker is not None, \
@@ -47,8 +48,6 @@ class Classifier:
         return random.sample(self.good_examples_to_sample, k=1)[0]
 
     def train_one_class(self, xs, initial_state):
-        # requirement for initial_state explained in the function calling this
-
         assert self.type_ == "initiation", "only initiation classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.one_class_trained, "one_class shouldn't be trained yet to train"

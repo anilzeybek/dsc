@@ -26,7 +26,7 @@ def is_initial_state_covered(initial_state, option_repertoire):
     return False
 
 
-def eval():
+def test():
     env = Env()
     with open(f"./train_results/options.pickle", 'rb') as f:
         option_repertoire = pickle.load(f)
@@ -64,10 +64,10 @@ def train():
     action_type = 'discrete' if isinstance(env.action_space, gym.spaces.Discrete) else 'continuous'
     global_option = Option("global", action_type, budget=1, env=env, parent_option=None,
                            min_examples_to_refine=hyperparams['min_examples_to_refine'],
-                           N=hyperparams['N'], K=hyperparams['K'])
+                           req_num_to_create_init=hyperparams['req_num_to_create_init'])
     goal_option = Option("goal", action_type, budget=hyperparams['budget'], env=env, parent_option=None,
-                         min_examples_to_refine=hyperparams['min_examples_to_refine'], N=hyperparams['N'],
-                         K=hyperparams['K'])
+                         min_examples_to_refine=hyperparams['min_examples_to_refine'],
+                         req_num_to_create_init=hyperparams['req_num_to_create_init'])
 
     option_repertoire = [global_option]
     option_without_initiation_classifier = goal_option
@@ -95,7 +95,7 @@ def train():
                 if option_without_initiation_classifier.termination_classifier.check(env_dict['observation']) \
                         and not option_without_initiation_classifier.initiation_classifier_created:
                     try:
-                        k_steps_before = obs_history[-hyperparams['K']]
+                        k_steps_before = obs_history[-hyperparams['num_steps_before']]
                     except IndexError:
                         k_steps_before = obs_history[0]
 
@@ -112,8 +112,7 @@ def train():
                             env=env,
                             parent_option=option_without_initiation_classifier,
                             min_examples_to_refine=hyperparams['min_examples_to_refine'],
-                            N=hyperparams['N'],
-                            K=hyperparams['K']
+                            req_num_to_create_init=hyperparams['req_num_to_create_init']
                         )
                         agent_no += 1
                         initial_state_covered = is_initial_state_covered(initial_state, option_repertoire[1:])
@@ -137,9 +136,9 @@ def train():
 
 
 def main() -> None:
-    if len(sys.argv) == 2 and sys.argv[1] == "eval":
-        print("----EVAL----")
-        eval()
+    if len(sys.argv) == 2 and sys.argv[1] == "test":
+        print("----TEST----")
+        test()
     else:
         print("----TRAIN----")
         train()

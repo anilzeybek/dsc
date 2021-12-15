@@ -13,11 +13,11 @@ class CustomEnvDiscrete:
         self.action_space = spaces.Discrete(6)
 
         self.start_pos = np.array([0.0, 0.0, 0.0], dtype=np.float32)
-        self.goal_pos = np.array([20.0, 30.0, 40.0], dtype=np.float32)
+        self.goal_pos = np.array([10.0, 15.0, 20.0], dtype=np.float32)
         self.current_pos = np.array([0.0, 0.0, 0.0], dtype=np.float32)
 
         self.step_count = 0
-        self.max_step_count = 250
+        self.max_step_count = 120
 
     def compute_reward(self, achieved, desired, _):
         return (1 * self._is_close(achieved, desired)) - 1
@@ -40,7 +40,8 @@ class CustomEnvDiscrete:
             "desired_goal": deepcopy(self.goal_pos)
         }
 
-    def _is_close(self, pos1, pos2):
+    @staticmethod
+    def _is_close(pos1, pos2):
         if pos1.ndim == 1 and pos2.ndim == 1:
             pos1 = np.expand_dims(pos1, axis=0)
             pos2 = np.expand_dims(pos2, axis=0)
