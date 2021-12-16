@@ -29,6 +29,7 @@ def is_initial_state_covered(initial_state, option_repertoire):
 
 def test():
     env = Env()
+    # env = gym.make("Point4Rooms-v1")
     with open(f"./train_results/options.pickle", 'rb') as f:
         option_repertoire = pickle.load(f)
 
@@ -43,13 +44,18 @@ def test():
         done = False
         total_reward = 0
 
+        last_was_global = False
         while not done:
             option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
-            next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict)
+            if not(last_was_global and option_repertoire[option_index].name == "global"):
+                print(option_repertoire[option_index].name)
+
+            last_was_global = option_repertoire[option_index].name == "global"
+            next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict, render=True)
             total_reward += sum(reward_list)
             env_dict = deepcopy(next_env_dict)
 
-        print(total_reward)
+        print(f"{total_reward}\n")
 
 
 def train():
@@ -88,8 +94,7 @@ def train():
                 obs_history.append(env_dict['observation'])
 
             next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict)
-            agent_over_options.step(env_dict['observation'], option_index, reward_list,
-                                    next_env_dict['observation'], done)
+            agent_over_options.step(env_dict['observation'], option_index, reward_list, next_env_dict['observation'], done)
 
             env_dict = deepcopy(next_env_dict)
 
@@ -101,8 +106,7 @@ def train():
                     except IndexError:
                         k_steps_before = obs_history[0]
 
-                    created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before,
-                                                                                                initial_state)
+                    created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before, initial_state)
                     if created:
                         option_without_initiation_classifier.agent.load_global_weights(global_option.agent)
                         agent_over_options.add_option()
@@ -127,14 +131,32 @@ def train():
     end = time()
     print("training completed, elapsed time: ", end - start)
 
+    os.makedirs("./train_results", exist_ok=True)
     for o in option_repertoire:
         o.freeze()
-    os.makedirs("./train_results", exist_ok=True)
 
     with open(f'./train_results/options.pickle', 'wb') as f:
         pickle.dump(option_repertoire, f)
 
     agent_over_options.save()
+
+    # for o in option_repertoire:
+    #     o.env = env
+
+    # agent_over_options.eps = 0
+    # while True:
+    #     env_dict = env.reset()
+    #     done = False
+    #     total_reward = 0
+
+    #     while not done:
+    #         option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
+    #         print("selected: ", option_repertoire[option_index].name)
+    #         next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict, render=True)
+    #         total_reward += sum(reward_list)
+    #         env_dict = deepcopy(next_env_dict)
+
+    #     print(total_reward)
 
 
 def main() -> None:
