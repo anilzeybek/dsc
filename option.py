@@ -175,3 +175,6 @@ class Option:
         self.bad_examples_to_refine = []
         self.env = None
         self.agent.memory = None
+        self.agent.compute_reward_func = None
+        self.initiation_classifier.env_termination_checker = None
+        self.termination_classifier.env_termination_checker = None

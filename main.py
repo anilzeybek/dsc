@@ -38,6 +38,8 @@ def test():
 
     for o in option_repertoire:
         o.env = env
+        if o.name == "global" or o.name == "goal":
+            o.termination_classifier.env_termination_checker = o.env.termination
 
     agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0], action_size=len(option_repertoire))
     agent_over_options.load()
@@ -139,24 +141,6 @@ def train():
         pickle.dump(option_repertoire, f)
 
     agent_over_options.save()
-
-    # for o in option_repertoire:
-    #     o.env = env
-
-    # agent_over_options.eps = 0
-    # while True:
-    #     env_dict = env.reset()
-    #     done = False
-    #     total_reward = 0
-
-    #     while not done:
-    #         option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
-    #         print("selected: ", option_repertoire[option_index].name)
-    #         next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict, render=True)
-    #         total_reward += sum(reward_list)
-    #         env_dict = deepcopy(next_env_dict)
-
-    #     print(total_reward)
 
 
 def main() -> None:
