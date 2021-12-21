@@ -29,12 +29,7 @@ class MetaDQNAgent:
     def add_option(self):
         self.action_size += 1
         self.Q_network.change_last_layer(self.action_size)
-
-        new_Q_network = QNetwork(self.obs_size, self.action_size, self.hyperparams['hidden_1'],
-                                 self.hyperparams['hidden_2'])
-        new_Q_network.load_state_dict(self.Q_network.state_dict())
         # TODO: (LATER) assign appropriate initial values for new layer, maybe its achievable by resetting epsilon?
-        self.Q_network = new_Q_network
         self.target_network = deepcopy(self.Q_network)
 
     @staticmethod
@@ -48,6 +43,10 @@ class MetaDQNAgent:
         for i, o in enumerate(option_repertoire):
             if o.initiation_classifier.check(obs):
                 selectable_indexes.append(i)
+
+        # TODO: following is not a feasible solution (removing the global from selectable)
+        if len(selectable_indexes) > 1:
+            selectable_indexes = selectable_indexes[1:]
 
         if np.random.rand() < self.eps:
             selected_index = np.random.choice(selectable_indexes)

@@ -22,7 +22,7 @@ class DDPGAgent:
         self.actor = Actor(self.state_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                            hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'],
                            action_bounds=self.action_bounds)
-        self.critic = Critic(self.state_dim, action_size=self.action_dim, goal_dim=self.goal_dim,
+        self.critic = Critic(self.state_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                              hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'])
         self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
@@ -105,10 +105,20 @@ class DDPGAgent:
         self.critic_optimizer.step()
 
     def load_global_weights(self, global_agent):
-        self.actor.load_state_dict(global_agent.actor.state_dict())
-        self.actor_target = deepcopy(self.actor)
+        if self.actor.goal_dim == global_agent.actor.goal_dim:
+            self.actor.load_state_dict(global_agent.actor.state_dict())
+            self.critic.load_state_dict(global_agent.critic.state_dict())
+        else:
+            global_agent_actor = deepcopy(global_agent.actor)
+            global_agent_critic = deepcopy(global_agent.critic)
 
-        self.critic.load_state_dict(global_agent.critic.state_dict())
+            global_agent_actor.change_first_layer(self.state_dim + self.goal_dim)
+            global_agent_critic.change_first_layer(self.state_dim + self.goal_dim + self.action_dim)
+
+            self.actor.load_state_dict(global_agent_actor.state_dict())
+            self.critic.load_state_dict(global_agent_critic.state_dict())
+
+        self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
 
     def save_weights(self, name):
