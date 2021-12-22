@@ -38,17 +38,17 @@ class MetaDQNAgent:
             hyperparams = json.load(file)
             return hyperparams
 
-    def act(self, obs, option_repertoire):
+    def act(self, obs, option_repertoire, train_mode=True):
         selectable_indexes = []
         for i, o in enumerate(option_repertoire):
             if o.initiation_classifier.check(obs):
                 selectable_indexes.append(i)
 
         # TODO: following is not a feasible solution (removing the global from selectable)
-        if len(selectable_indexes) > 1:
-            selectable_indexes = selectable_indexes[1:]
+        # if len(selectable_indexes) > 1:
+        #     selectable_indexes = selectable_indexes[1:]
 
-        if np.random.rand() < self.eps:
+        if np.random.rand() < self.eps and train_mode:
             selected_index = np.random.choice(selectable_indexes)
         else:
             with torch.no_grad():

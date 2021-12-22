@@ -45,22 +45,28 @@ def test():
     agent_over_options.load()
 
     while True:
-        env_dict = env.reset()
-        done = False
-        total_reward = 0
+        evaluate(env, agent_over_options, option_repertoire, render=True)
 
-        last_was_global = False
-        while not done:
-            option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
-            if not(last_was_global and option_repertoire[option_index].name == "global"):
-                print(option_repertoire[option_index].name)
 
-            last_was_global = option_repertoire[option_index].name == "global"
-            next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict, render=True)
-            total_reward += sum(reward_list)
-            env_dict = deepcopy(next_env_dict)
+def evaluate(env, agent_over_options, option_repertoire, render=False):
+    print("\n---EVALUATING:")
 
-        print(f"{total_reward}\n")
+    env_dict = env.reset()
+    done = False
+    total_reward = 0
+
+    last_was_global = False
+    while not done:
+        option_index = agent_over_options.act(env_dict['observation'], option_repertoire, train_mode=False)
+        if not(last_was_global and option_repertoire[option_index].name == "global"):
+            print(option_repertoire[option_index].name)
+
+        last_was_global = option_repertoire[option_index].name == "global"
+        next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict, render=render, train_mode=False)
+        total_reward += sum(reward_list)
+        env_dict = deepcopy(next_env_dict)
+
+    print(f"{total_reward}\n")
 
 
 def train():
@@ -90,6 +96,7 @@ def train():
         env_dict = env.reset()
         done = False
         obs_history = []
+        this_episode_used = False
 
         while not done:
             option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
@@ -101,15 +108,16 @@ def train():
 
             env_dict = deepcopy(next_env_dict)
 
-            if not initial_state_covered and option_without_initiation_classifier.termination_classifier.check(env_dict['observation']):
+            if not initial_state_covered and not this_episode_used and option_without_initiation_classifier.termination_classifier.check(env_dict['observation']):
                 try:
                     k_steps_before = obs_history[-hyperparams['num_steps_before']]
                 except IndexError:
                     k_steps_before = obs_history[0]
 
+                this_episode_used = True
                 created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before, initial_state)
                 if created:
-                    option_without_initiation_classifier.agent.load_global_weights(global_option.agent)
+                    option_without_initiation_classifier.agent.load_global_weights(deepcopy(global_option.agent.actor), deepcopy(global_option.agent.critic))
                     agent_over_options.add_option()
                     option_repertoire.append(option_without_initiation_classifier)
                     option_without_initiation_classifier = Option(
@@ -124,6 +132,9 @@ def train():
                     )
                     agent_no += 1
                     initial_state_covered = is_initial_state_covered(initial_state, option_repertoire[1:])
+
+        if episode_num % 10 == 0:
+            evaluate(env, agent_over_options, option_repertoire)
 
         print(f"{episode_num}/{hyperparams['max_episodes']}")
 
@@ -144,7 +155,7 @@ def train():
 
 
 def main() -> None:
-    seed = 1
+    seed = 49
 
     random.seed(seed)
     np.random.seed(seed)

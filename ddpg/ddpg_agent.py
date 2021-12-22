@@ -74,6 +74,7 @@ class DDPGAgent:
     def train(self):
         states, actions, rewards, next_states, goals = self.memory.sample(self.batch_size)
 
+        # TODO: problematic, goal option's bad actions rewarded as if they were good
         inputs = np.concatenate([states, goals], axis=1)
         next_inputs = np.concatenate([next_states, goals], axis=1)
         dones = rewards + 1
@@ -104,14 +105,11 @@ class DDPGAgent:
         critic_loss.backward()
         self.critic_optimizer.step()
 
-    def load_global_weights(self, global_agent):
-        if self.actor.goal_dim == global_agent.actor.goal_dim:
-            self.actor.load_state_dict(global_agent.actor.state_dict())
-            self.critic.load_state_dict(global_agent.critic.state_dict())
+    def load_global_weights(self, global_agent_actor, global_agent_critic):
+        if self.actor.goal_dim == global_agent_actor.goal_dim:
+            self.actor.load_state_dict(global_agent_actor.state_dict())
+            self.critic.load_state_dict(global_agent_critic.state_dict())
         else:
-            global_agent_actor = deepcopy(global_agent.actor)
-            global_agent_critic = deepcopy(global_agent.critic)
-
             global_agent_actor.change_first_layer(self.state_dim + self.goal_dim)
             global_agent_critic.change_first_layer(self.state_dim + self.goal_dim + self.action_dim)
 

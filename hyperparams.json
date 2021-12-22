@@ -3,10 +3,10 @@
     "req_num_to_create_init": 15,
     "num_steps_before": 10,
     "min_examples_to_refine": 30,
-    "max_episodes": 250,
+    "max_episodes": 200,
     "agent_over_options": {
         "lr": 1e-3,
-        "buffer_size": 100000,
+        "buffer_size": 10000,
         "batch_size": 64,
         "gamma": 0.99,
         "sync_target_every": 1000,
@@ -20,7 +20,7 @@
     "local_agent_continuous": {
         "actor_lr": 1e-3,
         "critic_lr": 1e-3,
-        "buffer_size": 200000,
+        "buffer_size": 20000,
         "batch_size": 64,
         "gamma": 0.98,
         "tau": 0.05,
@@ -30,7 +30,7 @@
     },
     "local_agent_discrete": {
         "lr": 1e-3,
-        "buffer_size": 200000,
+        "buffer_size": 20000,
         "batch_size": 64,
         "gamma": 0.98,
         "tau": 0.05,

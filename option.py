@@ -13,7 +13,6 @@ class Option:
         self.parent_option = parent_option
         self.min_examples_to_refine = min_examples_to_refine
         self.req_num_to_create_init = req_num_to_create_init
-        self._frozen = None
 
         if goal_dim is None:
             goal_dim = env.observation_space["desired_goal"].shape[0]
@@ -63,7 +62,7 @@ class Option:
         self.bad_examples_to_refine = []
         print(f"option {self.name}: generated")
 
-    def execute(self, env_dict, render=False):
+    def execute(self, env_dict, render=False, train_mode=True):
         assert self.initiation_classifier_created, "to execute an option, its initiation classifier must be at least created"
 
         starting_obs = deepcopy(env_dict["observation"])
@@ -87,15 +86,25 @@ class Option:
         done = False
         next_env_dict = {}
         while t < self.budget:
-            action = self.agent.act(obs, desired_goal, train_mode=not self._frozen)
-            next_env_dict, reward, done, _ = self.env.step(action)
+            action = self.agent.act(obs, desired_goal, train_mode=train_mode)
+            for i in range(len(self.env.action_space.low)):
+                if self.env.action_space.low[i] > action[i]:
+                    action[i] = self.env.action_space.low[i]
+                elif self.env.action_space.high[i] < action[i]:
+                    action[i] = self.env.action_space.high[i]
+
+            assert self.env.action_space.contains(action)
+            next_env_dict, _, done, _ = self.env.step(action)
             if render:
                 self.env.render()
-            reward_list.append(reward)
 
             next_obs = next_env_dict["observation"]
             next_achieved_goal = next_env_dict["achieved_goal"] if self.name == "global" or self.name == "goal" else deepcopy(next_obs)
             next_desired_goal = next_env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else deepcopy(desired_goal)
+
+            # TODO: other options requires their own reward compute
+            reward = self.env.compute_reward(next_achieved_goal, desired_goal, None)[0]
+            reward_list.append(reward)
 
             local_done = self.termination_classifier.check(next_obs)
 
@@ -110,10 +119,10 @@ class Option:
 
             t += 1
 
-            if self._frozen and local_done:
+            if not train_mode and local_done:
                 break
 
-        if not self._frozen:
+        if train_mode:
             episode_dict["state"].append(obs)
             episode_dict["achieved_goal"].append(achieved_goal)
             episode_dict["desired_goal"].append(desired_goal)
@@ -169,7 +178,6 @@ class Option:
         print(f"option {self.name}: initiation classifier refined")
 
     def freeze(self):
-        self._frozen = True
         self.successful_observations_to_create_initiation_classifier = []
         self.good_examples_to_refine = []
         self.bad_examples_to_refine = []
