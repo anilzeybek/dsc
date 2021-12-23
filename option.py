@@ -74,8 +74,7 @@ class Option:
         }
         obs = env_dict["observation"]
         achieved_goal = env_dict["achieved_goal"]
-        # TODO: in following, not just simply [:2] but get the desired goal as the achieved point of parent!
-        desired_goal = env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else self.termination_classifier.sample()[:2]
+        desired_goal = env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else self.env.obs_to_achieved(self.termination_classifier.sample())
 
         reward_list = []
 

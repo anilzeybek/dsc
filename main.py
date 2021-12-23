@@ -9,7 +9,6 @@ from typing import Any, Dict
 from custom_env.custom_env_continuous import CustomEnvContinuous as Env
 import os
 import pickle
-import sys
 import gym
 import mujoco_maze
 from time import time
