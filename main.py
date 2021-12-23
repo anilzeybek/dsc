@@ -30,8 +30,9 @@ def is_initial_state_covered(initial_state, option_repertoire):
     return False
 
 
-def test():
-    # env = Env()
+def test(global_only=False):
+    print("----TEST----")
+
     env = gym.make("Point4Rooms-v1")
     with open(f"./train_results/options.pickle", 'rb') as f:
         option_repertoire = pickle.load(f)
@@ -45,10 +46,10 @@ def test():
     agent_over_options.load()
 
     while True:
-        evaluate(env, agent_over_options, option_repertoire, render=True)
+        evaluate(env, agent_over_options, option_repertoire, render=True, global_only=global_only)
 
 
-def evaluate(env, agent_over_options, option_repertoire, render=False):
+def evaluate(env, agent_over_options, option_repertoire, render=False, global_only=False):
     print("\n---EVALUATING:")
 
     env_dict = env.reset()
@@ -58,6 +59,9 @@ def evaluate(env, agent_over_options, option_repertoire, render=False):
     last_was_global = False
     while not done:
         option_index = agent_over_options.act(env_dict['observation'], option_repertoire, train_mode=False)
+        if global_only:
+            option_index = 0
+
         if not(last_was_global and option_repertoire[option_index].name == "global"):
             print(option_repertoire[option_index].name)
 
@@ -70,6 +74,7 @@ def evaluate(env, agent_over_options, option_repertoire, render=False):
 
 
 def train():
+    print("----TRAIN----")
     start = time()
 
     hyperparams = read_hyperparams()
@@ -159,6 +164,7 @@ def train():
 def get_args():
     parser = argparse.ArgumentParser(description='options')
     parser.add_argument('--test', default=False, action='store_true')
+    parser.add_argument('--global_only', default=False, action='store_true')
     parser.add_argument('--seed', type=int, default=49)
 
     args = parser.parse_args()
@@ -173,10 +179,8 @@ def main() -> None:
     torch.manual_seed(args.seed)
 
     if args.test:
-        print("----TEST----")
-        test()
+        test(args.global_only)
     else:
-        print("----TRAIN----")
         train()
 
 
