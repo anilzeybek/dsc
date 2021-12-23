@@ -45,8 +45,8 @@ class MetaDQNAgent:
                 selectable_indexes.append(i)
 
         # TODO: following is not a feasible solution (removing the global from selectable)
-        # if len(selectable_indexes) > 1:
-        #     selectable_indexes = selectable_indexes[1:]
+        if len(selectable_indexes) > 1:
+            selectable_indexes = selectable_indexes[1:]
 
         if np.random.rand() < self.eps and train_mode:
             selected_index = np.random.choice(selectable_indexes)

@@ -18,9 +18,6 @@ class Actor(nn.Module):
         self.fc2 = nn.Linear(self.hidden_1, self.hidden_2)
         self.output = nn.Linear(self.hidden_2, self.action_dim)
 
-    def change_first_layer(self, new_dim):
-        self.fc1 = nn.Linear(new_dim, self.hidden_1)
-
     def forward(self, x):
         x = f.relu(self.fc1(x))
         x = f.relu(self.fc2(x))
@@ -42,9 +39,6 @@ class Critic(nn.Module):
         self.fc1 = nn.Linear(self.state_dim + self.goal_dim + self.action_dim, self.hidden_1)
         self.fc2 = nn.Linear(self.hidden_1, self.hidden_2)
         self.output = nn.Linear(self.hidden_2, 1)
-
-    def change_first_layer(self, new_dim):
-        self.fc1 = nn.Linear(new_dim, self.hidden_1)
 
     def forward(self, x, a):
         x = f.relu(self.fc1(torch.cat([x, a], dim=-1)))

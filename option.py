@@ -5,7 +5,7 @@ from classifier import Classifier
 
 
 class Option:
-    def __init__(self, name, action_type, budget, env, parent_option, min_examples_to_refine, req_num_to_create_init, goal_dim=None):
+    def __init__(self, name, action_type, budget, env, parent_option, min_examples_to_refine, req_num_to_create_init):
         self.name = name
         self.action_type = action_type
         self.budget = budget
@@ -14,19 +14,15 @@ class Option:
         self.min_examples_to_refine = min_examples_to_refine
         self.req_num_to_create_init = req_num_to_create_init
 
-        if goal_dim is None:
-            goal_dim = env.observation_space["desired_goal"].shape[0]
-
         assert self.action_type in ['discrete', 'continuous'], "action_type must be either discrete or continuous"
         if self.name == "global" or self.name == "goal":
             assert parent_option is None, "global and goal options cant have parent option"
 
         if self.action_type == "continuous":
-            # TODO: check bounds
             self.agent = DDPGAgent(env.observation_space["observation"].shape[0], env.action_space.shape[0],
-                                   goal_dim, [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
+                                   env.observation_space["desired_goal"].shape[0], [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
         else:
-            self.agent = DQNAgent(env.observation_space["observation"].shape[0], env.action_space.n, goal_dim, env.compute_reward)
+            self.agent = DQNAgent(env.observation_space["observation"].shape[0], env.action_space.n, env.observation_space["desired_goal"].shape[0], env.compute_reward)
 
         if parent_option:
             assert self.name != "global" or self.name != "goal"
@@ -77,8 +73,9 @@ class Option:
             "next_achieved_goal": []
         }
         obs = env_dict["observation"]
-        achieved_goal = env_dict["achieved_goal"] if self.name == "global" or self.name == "goal" else deepcopy(obs)
-        desired_goal = env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else self.termination_classifier.sample()
+        achieved_goal = env_dict["achieved_goal"]
+        # TODO: in following, not just simply [:2] but get the desired goal as the achieved point of parent!
+        desired_goal = env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else self.termination_classifier.sample()[:2]
 
         reward_list = []
 
@@ -94,19 +91,20 @@ class Option:
                     action[i] = self.env.action_space.high[i]
 
             assert self.env.action_space.contains(action)
+
             next_env_dict, _, done, _ = self.env.step(action)
             if render:
                 self.env.render()
 
             next_obs = next_env_dict["observation"]
-            next_achieved_goal = next_env_dict["achieved_goal"] if self.name == "global" or self.name == "goal" else deepcopy(next_obs)
+            next_achieved_goal = next_env_dict["achieved_goal"]
             next_desired_goal = next_env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else deepcopy(desired_goal)
 
-            # TODO: other options requires their own reward compute
             reward = self.env.compute_reward(next_achieved_goal, desired_goal, None)[0]
             reward_list.append(reward)
 
-            local_done = self.termination_classifier.check(next_obs)
+            if not local_done:
+                local_done = self.termination_classifier.check(next_obs)
 
             episode_dict["state"].append(obs)
             episode_dict["action"].append(action)

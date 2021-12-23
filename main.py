@@ -13,6 +13,7 @@ import sys
 import gym
 import mujoco_maze
 from time import time
+import argparse
 
 
 def read_hyperparams() -> Dict[str, Any]:
@@ -118,20 +119,22 @@ def train():
                 created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before, initial_state)
                 if created:
                     option_without_initiation_classifier.agent.load_global_weights(deepcopy(global_option.agent.actor), deepcopy(global_option.agent.critic))
+
                     agent_over_options.add_option()
                     option_repertoire.append(option_without_initiation_classifier)
-                    option_without_initiation_classifier = Option(
-                        str(agent_no),
-                        action_type,
-                        hyperparams['budget'],
-                        env=env,
-                        parent_option=option_without_initiation_classifier,
-                        min_examples_to_refine=hyperparams['min_examples_to_refine'],
-                        req_num_to_create_init=hyperparams['req_num_to_create_init'],
-                        goal_dim=env_dict['observation'].shape[0]
-                    )
-                    agent_no += 1
+
                     initial_state_covered = is_initial_state_covered(initial_state, option_repertoire[1:])
+                    if not initial_state_covered:
+                        option_without_initiation_classifier = Option(
+                            str(agent_no),
+                            action_type,
+                            hyperparams['budget'],
+                            env=env,
+                            parent_option=option_without_initiation_classifier,
+                            min_examples_to_refine=hyperparams['min_examples_to_refine'],
+                            req_num_to_create_init=hyperparams['req_num_to_create_init'],
+                        )
+                        agent_no += 1
 
         if episode_num % 10 == 0:
             evaluate(env, agent_over_options, option_repertoire)
@@ -154,14 +157,23 @@ def train():
     agent_over_options.save()
 
 
+def get_args():
+    parser = argparse.ArgumentParser(description='options')
+    parser.add_argument('--test', default=False, action='store_true')
+    parser.add_argument('--seed', type=int, default=49)
+
+    args = parser.parse_args()
+    return args
+
+
 def main() -> None:
-    seed = 49
+    args = get_args()
 
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
 
-    if len(sys.argv) == 2 and sys.argv[1] == "test":
+    if args.test:
         print("----TEST----")
         test()
     else:

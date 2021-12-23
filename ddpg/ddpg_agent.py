@@ -106,15 +106,8 @@ class DDPGAgent:
         self.critic_optimizer.step()
 
     def load_global_weights(self, global_agent_actor, global_agent_critic):
-        if self.actor.goal_dim == global_agent_actor.goal_dim:
-            self.actor.load_state_dict(global_agent_actor.state_dict())
-            self.critic.load_state_dict(global_agent_critic.state_dict())
-        else:
-            global_agent_actor.change_first_layer(self.state_dim + self.goal_dim)
-            global_agent_critic.change_first_layer(self.state_dim + self.goal_dim + self.action_dim)
-
-            self.actor.load_state_dict(global_agent_actor.state_dict())
-            self.critic.load_state_dict(global_agent_critic.state_dict())
+        self.actor.load_state_dict(global_agent_actor.state_dict())
+        self.critic.load_state_dict(global_agent_critic.state_dict())
 
         self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
