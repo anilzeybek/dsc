@@ -13,6 +13,7 @@ import gym
 import mujoco_maze
 from time import time
 import argparse
+import matplotlib.pyplot as plt
 
 
 def read_hyperparams() -> Dict[str, Any]:
@@ -97,11 +98,13 @@ def train():
     agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0], action_size=len(option_repertoire))
     agent_no = 2  # to match the option index
 
+    all_rewards = []
     for episode_num in range(hyperparams['max_episodes']):
         env_dict = env.reset()
         done = False
         obs_history = []
         this_episode_used = False
+        episode_reward = 0
 
         while not done:
             option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
@@ -109,6 +112,7 @@ def train():
                 obs_history.append(env_dict['observation'])
 
             next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict)
+            episode_reward += sum(reward_list)
             agent_over_options.step(env_dict['observation'], option_index, reward_list, next_env_dict['observation'], done)
 
             env_dict = deepcopy(next_env_dict)
@@ -140,6 +144,7 @@ def train():
                         )
                         agent_no += 1
 
+        all_rewards.append(episode_reward)
         if episode_num % 10 == 0:
             evaluate(env, agent_over_options, option_repertoire)
 
@@ -150,6 +155,12 @@ def train():
 
     end = time()
     print("training completed, elapsed time: ", end - start)
+
+    # TODO: before plot, average over
+    plt.plot(all_rewards)
+    plt.xlabel("Episode")
+    plt.ylabel("Reward")
+    plt.savefig("plots/40budget.png")
 
     os.makedirs("./train_results", exist_ok=True)
     for o in option_repertoire:
