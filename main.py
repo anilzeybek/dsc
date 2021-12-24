@@ -156,8 +156,10 @@ def train():
     end = time()
     print("training completed, elapsed time: ", end - start)
 
-    # TODO: before plot, average over
-    plt.plot(all_rewards)
+    all_rewards = np.array(all_rewards)
+    smoothed_all_rewards = np.mean(all_rewards.reshape(-1, 10), axis=1)
+
+    plt.plot(smoothed_all_rewards)
     plt.xlabel("Episode")
     plt.ylabel("Reward")
     plt.savefig("plots/40budget.png")
