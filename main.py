@@ -74,7 +74,7 @@ def evaluate(env, agent_over_options, option_repertoire, render=False, global_on
     print(f"{total_reward}\n")
 
 
-def train():
+def train(global_only=False):
     print("----TRAIN----")
     start = time()
 
@@ -88,15 +88,15 @@ def train():
     global_option = Option("global", action_type, budget=1, env=env, parent_option=None,
                            min_examples_to_refine=hyperparams['min_examples_to_refine'],
                            req_num_to_create_init=hyperparams['req_num_to_create_init'])
-    goal_option = Option("goal", action_type, budget=hyperparams['budget'], env=env, parent_option=None,
-                         min_examples_to_refine=hyperparams['min_examples_to_refine'],
-                         req_num_to_create_init=hyperparams['req_num_to_create_init'])
+    if not global_only:
+        goal_option = Option("goal", action_type, budget=hyperparams['budget'], env=env, parent_option=None,
+                             min_examples_to_refine=hyperparams['min_examples_to_refine'],
+                             req_num_to_create_init=hyperparams['req_num_to_create_init'])
+        option_without_initiation_classifier = goal_option
+        agent_no = 2  # to match the option index
 
     option_repertoire = [global_option]
-    option_without_initiation_classifier = goal_option
-
     agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0], action_size=len(option_repertoire))
-    agent_no = 2  # to match the option index
 
     all_rewards = []
     for episode_num in range(hyperparams['max_episodes']):
@@ -108,7 +108,7 @@ def train():
 
         while not done:
             option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
-            if option_repertoire[option_index].name == "global":
+            if not global_only and option_repertoire[option_index].name == "global":
                 obs_history.append(env_dict['observation'])
 
             next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict)
@@ -117,7 +117,11 @@ def train():
 
             env_dict = deepcopy(next_env_dict)
 
-            if not initial_state_covered and not this_episode_used and option_without_initiation_classifier.termination_classifier.check(env_dict['observation']):
+            if not global_only and \
+                    not initial_state_covered and \
+                    not this_episode_used and \
+                    option_without_initiation_classifier.termination_classifier.check(env_dict['observation']):
+
                 try:
                     k_steps_before = obs_history[-hyperparams['num_steps_before']]
                 except IndexError:
@@ -156,15 +160,17 @@ def train():
     end = time()
     print("training completed, elapsed time: ", end - start)
 
+    os.makedirs("./train_results", exist_ok=True)
+    os.makedirs("./plots", exist_ok=True)
+
     all_rewards = np.array(all_rewards)
     smoothed_all_rewards = np.mean(all_rewards.reshape(-1, 10), axis=1)
 
     plt.plot(smoothed_all_rewards)
     plt.xlabel("Episode")
     plt.ylabel("Reward")
-    plt.savefig("plots/40budget.png")
+    # plt.savefig("plots/40budget_global_only.png")
 
-    os.makedirs("./train_results", exist_ok=True)
     for o in option_repertoire:
         o.freeze()
 
@@ -194,10 +200,8 @@ def main() -> None:
     if args.test:
         test(args.global_only)
     else:
-        train()
+        train(args.global_only)
 
 
 if __name__ == "__main__":
     main()
-
-# TODO: we can add random goals FOR GLOBAL in train instead of the always same goal for better HER
