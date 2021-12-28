@@ -31,10 +31,9 @@ def is_initial_state_covered(initial_state, option_repertoire):
     return False
 
 
-def test(global_only=False):
+def test(env, global_only=False):
     print("----TEST----")
 
-    env = gym.make("Point4Rooms-v1")
     with open(f"./train_results/options.pickle", 'rb') as f:
         option_repertoire = pickle.load(f)
 
@@ -74,13 +73,11 @@ def evaluate(env, agent_over_options, option_repertoire, render=False, global_on
     print(f"{total_reward}\n")
 
 
-def train(global_only=False):
+def train(env, global_only=False):
     print("----TRAIN----")
     start = time()
-
     hyperparams = read_hyperparams()
-    # env = Env()
-    env = gym.make("Point4Rooms-v1")
+
     initial_state = deepcopy(env.reset()['observation'])
     initial_state_covered = False
 
@@ -193,14 +190,17 @@ def get_args():
 def main() -> None:
     args = get_args()
 
+    env = gym.make("Point4Rooms-v1")
+
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+    env.seed(args.seed)
 
     if args.test:
-        test(args.global_only)
+        test(env, args.global_only)
     else:
-        train(args.global_only)
+        train(env, args.global_only)
 
 
 if __name__ == "__main__":
