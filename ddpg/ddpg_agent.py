@@ -74,7 +74,6 @@ class DDPGAgent:
     def train(self):
         states, actions, rewards, next_states, goals = self.memory.sample(self.batch_size)
 
-        # TODO: problematic, goal option's bad actions rewarded as if they were good
         inputs = np.concatenate([states, goals], axis=1)
         next_inputs = np.concatenate([next_states, goals], axis=1)
         dones = rewards + 1

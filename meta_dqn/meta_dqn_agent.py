@@ -29,7 +29,6 @@ class MetaDQNAgent:
     def add_option(self):
         self.action_size += 1
         self.Q_network.change_last_layer(self.action_size)
-        # TODO: (LATER) assign appropriate initial values for new layer, maybe its achievable by resetting epsilon?
         self.target_network = deepcopy(self.Q_network)
 
     @staticmethod
@@ -44,7 +43,7 @@ class MetaDQNAgent:
             if o.initiation_classifier.check(obs):
                 selectable_indexes.append(i)
 
-        # TODO: following is not a feasible solution (removing the global from selectable)
+        # TODO: following is not a feasible solution (removing the global from selectable) for optimistic init of options
         if len(selectable_indexes) > 1:
             selectable_indexes = selectable_indexes[1:]
 
