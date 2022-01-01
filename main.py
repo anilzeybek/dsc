@@ -5,7 +5,7 @@ from numpy import random
 import torch
 from meta_dqn.meta_dqn_agent import MetaDQNAgent
 from option import Option
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 import os
 import pickle
 import gym
@@ -26,7 +26,7 @@ def read_hyperparams() -> Dict[str, Any]:
 
 def is_initial_state_covered(initial_state, option_repertoire):
     for o in option_repertoire:
-        if o.initiation_classifier.check(initial_state):
+        if o.init_classifier.check(initial_state):
             print("------------Initial state covered!")
             return True
 
@@ -37,7 +37,7 @@ def test(env, global_only=False, dynamic_goal=False):
     print("----TEST----")
 
     with open(f"./train_results/options.pickle", 'rb') as f:
-        option_repertoire = pickle.load(f)
+        option_repertoire: List[Option] = pickle.load(f)
 
     for o in option_repertoire:
         o.env = env
@@ -54,7 +54,7 @@ def test(env, global_only=False, dynamic_goal=False):
             env.change_goal()
 
 
-def evaluate(env, agent_over_options, option_repertoire, render=False, global_only=False):
+def evaluate(env, agent_over_options, option_repertoire: List[Option], render=False, global_only=False):
     print("\n---EVALUATING:")
 
     env_dict = env.reset()
@@ -79,7 +79,7 @@ def evaluate(env, agent_over_options, option_repertoire, render=False, global_on
     print(f"{total_reward}\n")
 
 
-def train(env, global_only=False):
+def train(env: gym.Env, global_only=False):
     print("----TRAIN----")
     start = time()
     hyperparams = read_hyperparams()
@@ -92,15 +92,15 @@ def train(env, global_only=False):
                            min_examples_to_refine=hyperparams['min_examples_to_refine'],
                            req_num_to_create_init=hyperparams['req_num_to_create_init'])
 
-    option_without_initiation_classifier: Optional[Option] = None
+    option_without_init_classifier: Optional[Option] = None
     if not global_only:
         goal_option = Option("goal", action_type, budget=hyperparams['budget'], env=env, parent_option=None,
                              min_examples_to_refine=hyperparams['min_examples_to_refine'],
                              req_num_to_create_init=hyperparams['req_num_to_create_init'])
-        option_without_initiation_classifier = goal_option
+        option_without_init_classifier = goal_option
 
     agent_no = 2  # to match the option index
-    option_repertoire = [global_option]
+    option_repertoire: List[Option] = [global_option]
     agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0],
                                       action_size=len(option_repertoire))
 
@@ -127,7 +127,7 @@ def train(env, global_only=False):
             if not global_only and \
                     not initial_state_covered and \
                     not this_episode_used and \
-                    option_without_initiation_classifier.termination_classifier.check(env_dict['observation']):
+                    option_without_init_classifier.termination_classifier.check(env_dict['observation']):
 
                 try:
                     k_steps_before = obs_history[-hyperparams['num_steps_before']]
@@ -135,23 +135,23 @@ def train(env, global_only=False):
                     k_steps_before = obs_history[0]
 
                 this_episode_used = True
-                created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before,
-                                                                                            initial_state)
+                created = option_without_init_classifier.create_init_classifier(k_steps_before,
+                                                                                initial_state)
                 if created:
-                    option_without_initiation_classifier.agent.load_global_weights(deepcopy(global_option.agent.actor),
-                                                                                   deepcopy(global_option.agent.critic))
+                    option_without_init_classifier.agent.load_global_weights(deepcopy(global_option.agent.actor),
+                                                                             deepcopy(global_option.agent.critic))
 
                     agent_over_options.add_option()
-                    option_repertoire.append(option_without_initiation_classifier)
+                    option_repertoire.append(option_without_init_classifier)
 
                     initial_state_covered = is_initial_state_covered(initial_state, option_repertoire[1:])
                     if not initial_state_covered:
-                        option_without_initiation_classifier = Option(
+                        option_without_init_classifier = Option(
                             str(agent_no),
                             action_type,
                             hyperparams['budget'],
                             env=env,
-                            parent_option=option_without_initiation_classifier,
+                            parent_option=option_without_init_classifier,
                             min_examples_to_refine=hyperparams['min_examples_to_refine'],
                             req_num_to_create_init=hyperparams['req_num_to_create_init'],
                         )

@@ -7,7 +7,7 @@ from sklearn.svm import SVC
 
 class Classifier:
     def __init__(self, type_, for_global_option=False, for_goal_option=False, env_termination_checker=None):
-        assert type_ in ["initiation", "termination"], "type_ can be 'initiation' or 'termination'"
+        assert type_ in ["init", "termination"], "type_ can be 'init' or 'termination'"
         assert not (for_global_option and for_goal_option), "it cant be both global and goal"
 
         self.type_ = type_
@@ -30,7 +30,7 @@ class Classifier:
             assert self.env_termination_checker is None, "why provide termination checker for non global or goal"
 
     def check(self, x) -> bool:
-        if self.type_ == "initiation" and self.for_global_option:
+        if self.type_ == "init" and self.for_global_option:
             return True
 
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
@@ -48,7 +48,7 @@ class Classifier:
         return random.sample(self.good_examples_to_sample, k=1)[0]
 
     def train_one_class(self, xs, initial_state):
-        assert self.type_ == "initiation", "only initiation classifiers can be trained"
+        assert self.type_ == "init", "only init classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.one_class_trained, "one_class shouldn't be trained yet to train"
 
@@ -63,7 +63,7 @@ class Classifier:
         self.one_class_trained = True
 
     def train_two_class(self, good_examples, bad_examples):
-        assert self.type_ == "initiation", "only initiation classifiers can be trained"
+        assert self.type_ == "init", "only init classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.one_class_refined, "one_class shouldn't be re-trained"
 

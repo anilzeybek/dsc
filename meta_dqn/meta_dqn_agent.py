@@ -1,10 +1,10 @@
 import json
-from typing import Any, Dict
+from typing import Any, Dict, List
 import numpy as np
 import torch
 import torch.nn.functional as f
 import torch.optim as optim
-
+from option import Option
 from .model import QNetwork
 from .replay_buffer import ReplayBuffer
 from copy import deepcopy
@@ -37,10 +37,10 @@ class MetaDQNAgent:
             hyperparams = json.load(file)
             return hyperparams
 
-    def act(self, obs, option_repertoire, train_mode=True):
+    def act(self, obs, option_repertoire: List[Option], train_mode=True):
         selectable_indexes = []
         for i, o in enumerate(option_repertoire):
-            if o.initiation_classifier.check(obs):
+            if o.init_classifier.check(obs):
                 selectable_indexes.append(i)
 
         # TODO: following is not feasible (removing the global from selectable) for optimistic init of options
@@ -89,7 +89,7 @@ class MetaDQNAgent:
 
             discounted_reward = torch.from_numpy(discounted_reward).float()
             Q_target = discounted_reward + (self.hyperparams['gamma'] ** len(rewards_lists)) * Q_target_next * (
-                        1 - dones)
+                1 - dones)
 
         loss = f.mse_loss(Q_current, Q_target)
 

@@ -28,16 +28,16 @@ class Option:
 
         if parent_option:
             assert self.name != "global" or self.name != "goal"
-            assert parent_option.initiation_classifier_created, \
-                "if parent provided, its initiation classifier should be created"
+            assert parent_option.init_classifier_created, \
+                "if parent provided, its init classifier should be created"
 
-            self.termination_classifier = deepcopy(parent_option.initiation_classifier)
-            self.termination_classifier.one_class_svm = parent_option.initiation_classifier.one_class_svm
+            self.termination_classifier = deepcopy(parent_option.init_classifier)
+            self.termination_classifier.one_class_svm = parent_option.init_classifier.one_class_svm
             self.termination_classifier.for_global_option = False
             self.termination_classifier.for_goal_option = False
             self.termination_classifier.type_ = "termination"
 
-            self.initiation_classifier = Classifier(type_="initiation")
+            self.init_classifier = Classifier(type_="init")
         else:
             # This means self is either goal or global option
             this_is_global_option = (self.name == "global")
@@ -47,23 +47,23 @@ class Option:
                                                      for_goal_option=this_is_goal_option,
                                                      env_termination_checker=env.termination)
 
-            self.initiation_classifier = Classifier(type_="initiation", for_global_option=this_is_global_option,
-                                                    for_goal_option=this_is_goal_option)
-        self.initiation_classifier_created = False
-        self.initiation_classifier_refined = False
+            self.init_classifier = Classifier(type_="init", for_global_option=this_is_global_option,
+                                              for_goal_option=this_is_goal_option)
+        self.init_classifier_created = False
+        self.init_classifier_refined = False
 
         if self.name == "global":
-            self.initiation_classifier_created = True
-            self.initiation_classifier_refined = True
+            self.init_classifier_created = True
+            self.init_classifier_refined = True
 
-        self.successful_observations_to_create_initiation_classifier = []
+        self.successful_observations_to_create_init_classifier = []
         self.good_examples_to_refine = []
         self.bad_examples_to_refine = []
         print(f"option {self.name}: generated")
 
     def execute(self, env_dict, render=False, train_mode=True):
-        assert self.initiation_classifier_created, \
-            "to execute an option, its initiation classifier must be at least created"
+        assert self.init_classifier_created, \
+            "to execute an option, its init classifier must be at least created"
 
         starting_obs = deepcopy(env_dict["observation"])
         t = 0
@@ -145,48 +145,48 @@ class Option:
                 else:
                     self.bad_examples_to_refine.append(starting_obs)
 
-                if not self.initiation_classifier_refined and \
+                if not self.init_classifier_refined and \
                         len(self.good_examples_to_refine) >= self.min_examples_to_refine and \
                         len(self.bad_examples_to_refine) >= self.min_examples_to_refine:
-                    self.refine_initiation_classifier()
+                    self.refine_init_classifier()
 
         if done and self.action_type == "discrete":
             self.agent.update_eps()
 
         return next_env_dict, reward_list, done
 
-    def create_initiation_classifier(self, successful_observation, initial_state):
+    def create_init_classifier(self, successful_observation, initial_state):
         # initial_state is required because if list contains only it, it fails
 
-        assert not self.initiation_classifier_created or not self.initiation_classifier_refined, \
-            "if you call this function, initiation classifier must be untouched"
+        assert not self.init_classifier_created or not self.init_classifier_refined, \
+            "if you call this function, init classifier must be untouched"
 
         if successful_observation is not None:
-            self.successful_observations_to_create_initiation_classifier.append(successful_observation)
+            self.successful_observations_to_create_init_classifier.append(successful_observation)
 
-        if len(self.successful_observations_to_create_initiation_classifier) == self.req_num_to_create_init:
-            self.initiation_classifier.train_one_class(self.successful_observations_to_create_initiation_classifier,
-                                                       initial_state)
-            self.initiation_classifier_created = True
-            print(f"option {self.name}: initiation classifier created")
+        if len(self.successful_observations_to_create_init_classifier) == self.req_num_to_create_init:
+            self.init_classifier.train_one_class(self.successful_observations_to_create_init_classifier,
+                                                 initial_state)
+            self.init_classifier_created = True
+            print(f"option {self.name}: init classifier created")
             return True
 
         return False
 
-    def refine_initiation_classifier(self):
-        assert self.initiation_classifier_created, "to refine an initiation classifier, it must be created"
-        assert not self.initiation_classifier_refined, "you can't refine an already refined initiation classifier"
+    def refine_init_classifier(self):
+        assert self.init_classifier_created, "to refine an init classifier, it must be created"
+        assert not self.init_classifier_refined, "you can't refine an already refined init classifier"
 
-        self.initiation_classifier.train_two_class(self.good_examples_to_refine, self.bad_examples_to_refine)
-        self.initiation_classifier_refined = True
-        print(f"option {self.name}: initiation classifier refined")
+        self.init_classifier.train_two_class(self.good_examples_to_refine, self.bad_examples_to_refine)
+        self.init_classifier_refined = True
+        print(f"option {self.name}: init classifier refined")
 
     def freeze(self):
-        self.successful_observations_to_create_initiation_classifier = []
+        self.successful_observations_to_create_init_classifier = []
         self.good_examples_to_refine = []
         self.bad_examples_to_refine = []
         self.env = None
         self.agent.memory = None
         self.agent.compute_reward_func = None
-        self.initiation_classifier.env_termination_checker = None
+        self.init_classifier.env_termination_checker = None
         self.termination_classifier.env_termination_checker = None
