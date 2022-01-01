@@ -43,7 +43,7 @@ class MetaDQNAgent:
             if o.initiation_classifier.check(obs):
                 selectable_indexes.append(i)
 
-        # TODO: following is not a feasible solution (removing the global from selectable) for optimistic init of options
+        # TODO: following is not feasible (removing the global from selectable) for optimistic init of options
         if len(selectable_indexes) > 1:
             selectable_indexes = selectable_indexes[1:]
 
@@ -88,7 +88,8 @@ class MetaDQNAgent:
                     discounted_reward[i] += (self.hyperparams['gamma'] ** j) * rewards_lists[i][j]
 
             discounted_reward = torch.from_numpy(discounted_reward).float()
-            Q_target = discounted_reward + (self.hyperparams['gamma'] ** len(rewards_lists)) * Q_target_next * (1 - dones)
+            Q_target = discounted_reward + (self.hyperparams['gamma'] ** len(rewards_lists)) * Q_target_next * (
+                        1 - dones)
 
         loss = f.mse_loss(Q_current, Q_target)
 
@@ -100,9 +101,9 @@ class MetaDQNAgent:
         if self.learn_count % self.hyperparams['sync_target_every'] == 0:
             self.target_network.load_state_dict(self.Q_network.state_dict())
 
-    def save(self):
+    def save(self) -> None:
         torch.save(self.Q_network.state_dict(), "./train_results/agent_over_options.pth")
 
-    def load(self):
+    def load(self) -> None:
         self.Q_network.load_state_dict(torch.load("./train_results/agent_over_options.pth"))
         self.eps = 0  # since we load, it should be 0 because we are not training anymore

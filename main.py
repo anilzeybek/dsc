@@ -5,11 +5,13 @@ from numpy import random
 import torch
 from meta_dqn.meta_dqn_agent import MetaDQNAgent
 from option import Option
-from typing import Any, Dict
-from custom_env.custom_env_continuous import CustomEnvContinuous as Env
+from typing import Any, Dict, Optional
 import os
 import pickle
 import gym
+# noinspection PyUnresolvedReferences
+import simple_goal_env
+# noinspection PyUnresolvedReferences
 import mujoco_maze
 from time import time
 import argparse
@@ -31,7 +33,7 @@ def is_initial_state_covered(initial_state, option_repertoire):
     return False
 
 
-def test(env, global_only=False):
+def test(env, global_only=False, dynamic_goal=False):
     print("----TEST----")
 
     with open(f"./train_results/options.pickle", 'rb') as f:
@@ -42,11 +44,14 @@ def test(env, global_only=False):
         if o.name == "global" or o.name == "goal":
             o.termination_classifier.env_termination_checker = o.env.termination
 
-    agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0], action_size=len(option_repertoire))
+    agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0],
+                                      action_size=len(option_repertoire))
     agent_over_options.load()
 
     while True:
         evaluate(env, agent_over_options, option_repertoire, render=True, global_only=global_only)
+        if dynamic_goal:
+            env.change_goal()
 
 
 def evaluate(env, agent_over_options, option_repertoire, render=False, global_only=False):
@@ -62,11 +67,12 @@ def evaluate(env, agent_over_options, option_repertoire, render=False, global_on
         if global_only:
             option_index = 0
 
-        if not(last_was_global and option_repertoire[option_index].name == "global"):
+        if not (last_was_global and option_repertoire[option_index].name == "global"):
             print(option_repertoire[option_index].name)
 
         last_was_global = option_repertoire[option_index].name == "global"
-        next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict, render=render, train_mode=False)
+        next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict, render=render,
+                                                                                   train_mode=False)
         total_reward += sum(reward_list)
         env_dict = deepcopy(next_env_dict)
 
@@ -85,15 +91,18 @@ def train(env, global_only=False):
     global_option = Option("global", action_type, budget=1, env=env, parent_option=None,
                            min_examples_to_refine=hyperparams['min_examples_to_refine'],
                            req_num_to_create_init=hyperparams['req_num_to_create_init'])
+
+    option_without_initiation_classifier: Optional[Option] = None
     if not global_only:
         goal_option = Option("goal", action_type, budget=hyperparams['budget'], env=env, parent_option=None,
                              min_examples_to_refine=hyperparams['min_examples_to_refine'],
                              req_num_to_create_init=hyperparams['req_num_to_create_init'])
         option_without_initiation_classifier = goal_option
-        agent_no = 2  # to match the option index
 
+    agent_no = 2  # to match the option index
     option_repertoire = [global_option]
-    agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0], action_size=len(option_repertoire))
+    agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0],
+                                      action_size=len(option_repertoire))
 
     all_rewards = []
     for episode_num in range(hyperparams['max_episodes']):
@@ -110,7 +119,8 @@ def train(env, global_only=False):
 
             next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict)
             episode_reward += sum(reward_list)
-            agent_over_options.step(env_dict['observation'], option_index, reward_list, next_env_dict['observation'], done)
+            agent_over_options.step(env_dict['observation'], option_index, reward_list,
+                                    next_env_dict['observation'], done)
 
             env_dict = deepcopy(next_env_dict)
 
@@ -125,9 +135,11 @@ def train(env, global_only=False):
                     k_steps_before = obs_history[0]
 
                 this_episode_used = True
-                created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before, initial_state)
+                created = option_without_initiation_classifier.create_initiation_classifier(k_steps_before,
+                                                                                            initial_state)
                 if created:
-                    option_without_initiation_classifier.agent.load_global_weights(deepcopy(global_option.agent.actor), deepcopy(global_option.agent.critic))
+                    option_without_initiation_classifier.agent.load_global_weights(deepcopy(global_option.agent.actor),
+                                                                                   deepcopy(global_option.agent.critic))
 
                     agent_over_options.add_option()
                     option_repertoire.append(option_without_initiation_classifier)
@@ -164,9 +176,10 @@ def train(env, global_only=False):
     smoothed_all_rewards = np.mean(all_rewards.reshape(-1, 10), axis=1)
 
     plt.plot(smoothed_all_rewards)
-    plt.xlabel("Episode")
-    plt.ylabel("Reward")
-    # plt.savefig("plots/40budget_global_only.png")
+    plt.title(f"budget: {hyperparams['budget']}")
+    plt.xlabel("episode")
+    plt.ylabel("reward")
+    plt.savefig("plots/plot.png")
 
     for o in option_repertoire:
         o.freeze()
@@ -176,10 +189,13 @@ def train(env, global_only=False):
 
     agent_over_options.save()
 
+    # following part is to visualize the init and termination sets
+
 
 def get_args():
     parser = argparse.ArgumentParser(description='options')
     parser.add_argument('--test', default=False, action='store_true')
+    parser.add_argument('--dynamic_goal', default=False, action='store_true')
     parser.add_argument('--global_only', default=False, action='store_true')
     parser.add_argument('--seed', type=int, default=49)
 
@@ -198,7 +214,7 @@ def main() -> None:
     env.seed(args.seed)
 
     if args.test:
-        test(env, args.global_only)
+        test(env, args.global_only, args.dynamic_goal)
     else:
         train(env, args.global_only)
 

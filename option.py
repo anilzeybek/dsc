@@ -20,13 +20,16 @@ class Option:
 
         if self.action_type == "continuous":
             self.agent = DDPGAgent(env.observation_space["observation"].shape[0], env.action_space.shape[0],
-                                   env.observation_space["desired_goal"].shape[0], [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
+                                   env.observation_space["desired_goal"].shape[0],
+                                   [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
         else:
-            self.agent = DQNAgent(env.observation_space["observation"].shape[0], env.action_space.n, env.observation_space["desired_goal"].shape[0], env.compute_reward)
+            self.agent = DQNAgent(env.observation_space["observation"].shape[0], env.action_space.n,
+                                  env.observation_space["desired_goal"].shape[0], env.compute_reward)
 
         if parent_option:
             assert self.name != "global" or self.name != "goal"
-            assert parent_option.initiation_classifier_created, "if parent provided, its initiation classifier should be created"
+            assert parent_option.initiation_classifier_created, \
+                "if parent provided, its initiation classifier should be created"
 
             self.termination_classifier = deepcopy(parent_option.initiation_classifier)
             self.termination_classifier.one_class_svm = parent_option.initiation_classifier.one_class_svm
@@ -59,7 +62,8 @@ class Option:
         print(f"option {self.name}: generated")
 
     def execute(self, env_dict, render=False, train_mode=True):
-        assert self.initiation_classifier_created, "to execute an option, its initiation classifier must be at least created"
+        assert self.initiation_classifier_created, \
+            "to execute an option, its initiation classifier must be at least created"
 
         starting_obs = deepcopy(env_dict["observation"])
         t = 0
@@ -74,7 +78,9 @@ class Option:
         }
         obs = env_dict["observation"]
         achieved_goal = env_dict["achieved_goal"]
-        desired_goal = env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else self.env.obs_to_achieved(self.termination_classifier.sample())
+        desired_goal = env_dict[
+            "desired_goal"] if self.name == "global" or self.name == "goal" else self.env.obs_to_achieved(
+            self.termination_classifier.sample())
 
         reward_list = []
 
@@ -97,7 +103,8 @@ class Option:
 
             next_obs = next_env_dict["observation"]
             next_achieved_goal = next_env_dict["achieved_goal"]
-            next_desired_goal = next_env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else deepcopy(desired_goal)
+            next_desired_goal = next_env_dict[
+                "desired_goal"] if self.name == "global" or self.name == "goal" else deepcopy(desired_goal)
 
             reward = self.env.compute_reward(next_achieved_goal, desired_goal, None)[0]
             reward_list.append(reward)
@@ -151,14 +158,15 @@ class Option:
     def create_initiation_classifier(self, successful_observation, initial_state):
         # initial_state is required because if list contains only it, it fails
 
-        assert not self.initiation_classifier_created, "if you call this function, initiation classifier must be untouched"
-        assert not self.initiation_classifier_refined, "if you call this function, initiation classifier must be untouched"
+        assert not self.initiation_classifier_created or not self.initiation_classifier_refined, \
+            "if you call this function, initiation classifier must be untouched"
 
         if successful_observation is not None:
             self.successful_observations_to_create_initiation_classifier.append(successful_observation)
 
         if len(self.successful_observations_to_create_initiation_classifier) == self.req_num_to_create_init:
-            self.initiation_classifier.train_one_class(self.successful_observations_to_create_initiation_classifier, initial_state)
+            self.initiation_classifier.train_one_class(self.successful_observations_to_create_initiation_classifier,
+                                                       initial_state)
             self.initiation_classifier_created = True
             print(f"option {self.name}: initiation classifier created")
             return True
