@@ -1,11 +1,14 @@
 from copy import deepcopy
+from typing import Dict, Tuple, List, Optional
+import numpy as np
 from ddpg.ddpg_agent import DDPGAgent
 from dqn.dqn_agent import DQNAgent
 from classifier import Classifier
 
 
 class Option:
-    def __init__(self, name, action_type, budget, env, parent_option, min_examples_to_refine, req_num_to_create_init):
+    def __init__(self, name: str, action_type: str, budget: int, env, parent_option: Optional,
+                 min_examples_to_refine: int, req_num_to_create_init: int) -> None:
         self.name = name
         self.action_type = action_type
         self.budget = budget
@@ -61,7 +64,9 @@ class Option:
         self.bad_examples_to_refine = []
         print(f"option {self.name}: generated")
 
-    def execute(self, env_dict, render=False, train_mode=True):
+    def execute(self, env_dict: Dict[str, np.ndarray], render=False, train_mode=True) -> \
+            Tuple[Dict[str, np.ndarray], List[float], bool]:
+
         assert self.init_classifier_created, \
             "to execute an option, its init classifier must be at least created"
 
@@ -78,9 +83,8 @@ class Option:
         }
         obs = env_dict["observation"]
         achieved_goal = env_dict["achieved_goal"]
-        desired_goal = env_dict[
-            "desired_goal"] if self.name == "global" or self.name == "goal" else self.env.obs_to_achieved(
-            self.termination_classifier.sample())
+        desired_goal = env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else \
+            self.env.obs_to_achieved(self.termination_classifier.sample())
 
         reward_list = []
 
@@ -155,7 +159,7 @@ class Option:
 
         return next_env_dict, reward_list, done
 
-    def create_init_classifier(self, successful_observation, initial_state):
+    def create_init_classifier(self, successful_observation: np.ndarray, initial_state: np.ndarray) -> bool:
         # initial_state is required because if list contains only it, it fails
 
         assert not self.init_classifier_created or not self.init_classifier_refined, \
@@ -173,7 +177,7 @@ class Option:
 
         return False
 
-    def refine_init_classifier(self):
+    def refine_init_classifier(self) -> None:
         assert self.init_classifier_created, "to refine an init classifier, it must be created"
         assert not self.init_classifier_refined, "you can't refine an already refined init classifier"
 
@@ -181,7 +185,7 @@ class Option:
         self.init_classifier_refined = True
         print(f"option {self.name}: init classifier refined")
 
-    def freeze(self):
+    def freeze(self) -> None:
         self.successful_observations_to_create_init_classifier = []
         self.good_examples_to_refine = []
         self.bad_examples_to_refine = []
