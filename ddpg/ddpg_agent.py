@@ -1,3 +1,4 @@
+from typing import List, Callable, Dict, Any
 import torch
 import json
 import numpy as np
@@ -5,10 +6,12 @@ from torch.optim import Adam
 from .models import Actor, Critic
 from .memory import Memory
 from copy import deepcopy
+from torch import nn
 
 
 class DDPGAgent:
-    def __init__(self, state_dim, action_dim, goal_dim, action_bounds, compute_reward_func):
+    def __init__(self, state_dim: int, action_dim: int, goal_dim: int, action_bounds: List[float],
+                 compute_reward_func: Callable) -> None:
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.goal_dim = goal_dim
@@ -39,12 +42,12 @@ class DDPGAgent:
         self.critic_optimizer = Adam(self.critic.parameters(), self.critic_lr)
 
     @staticmethod
-    def _read_hyperparams():
+    def _read_hyperparams() -> Dict[str, Any]:
         with open('hyperparams.json') as f:
             hyperparams = json.load(f)
             return hyperparams
 
-    def act(self, state, goal, train_mode=True):
+    def act(self, state: np.ndarray, goal: np.ndarray, train_mode=True) -> np.ndarray:
         state = np.expand_dims(state, axis=0)
         goal = np.expand_dims(goal, axis=0)
 
@@ -63,37 +66,37 @@ class DDPGAgent:
 
         return action
 
-    def store(self, episode_dict):
+    def store(self, episode_dict: Dict[str, List[np.ndarray]]) -> None:
         self.memory.add(episode_dict)
 
     @staticmethod
-    def soft_update_networks(local_model, target_model, tau=0.05):
+    def soft_update_networks(local_model: nn.Module, target_model: nn.Module, tau=0.05) -> None:
         for t_params, e_params in zip(target_model.parameters(), local_model.parameters()):
             t_params.data.copy_(tau * e_params.data + (1 - tau) * t_params.data)
 
-    def train(self):
+    def train(self) -> None:
         states, actions, rewards, next_states, goals = self.memory.sample(self.batch_size)
 
         inputs = np.concatenate([states, goals], axis=1)
         next_inputs = np.concatenate([next_states, goals], axis=1)
         dones = rewards + 1
 
-        inputs = torch.Tensor(inputs)
-        rewards = torch.Tensor(rewards)
-        next_inputs = torch.Tensor(next_inputs)
-        actions = torch.Tensor(actions)
-        dones = torch.Tensor(dones).long()
+        inputs_ = torch.Tensor(inputs)
+        rewards_ = torch.Tensor(rewards)
+        next_inputs_ = torch.Tensor(next_inputs)
+        actions_ = torch.Tensor(actions)
+        dones_ = torch.Tensor(dones).long()
 
         with torch.no_grad():
-            target_q = self.critic_target(next_inputs, self.actor_target(next_inputs))
-            target_returns = rewards + self.gamma * target_q * (1 - dones)
+            target_q = self.critic_target(next_inputs_, self.actor_target(next_inputs_))
+            target_returns = rewards_ + self.gamma * target_q * (1 - dones_)
             target_returns = torch.clamp(target_returns, -1 / (1 - self.gamma), 0)
 
-        q_eval = self.critic(inputs, actions)
+        q_eval = self.critic(inputs_, actions_)
         critic_loss = (target_returns - q_eval).pow(2).mean()
 
-        a = self.actor(inputs)
-        actor_loss = -self.critic(inputs, a).mean()
+        a = self.actor(inputs_)
+        actor_loss = -self.critic(inputs_, a).mean()
         actor_loss += a.pow(2).mean()
 
         self.actor_optimizer.zero_grad()
@@ -104,21 +107,13 @@ class DDPGAgent:
         critic_loss.backward()
         self.critic_optimizer.step()
 
-    def load_global_weights(self, global_agent_actor, global_agent_critic):
+    def load_global_weights(self, global_agent_actor: Actor, global_agent_critic: Critic) -> None:
         self.actor.load_state_dict(global_agent_actor.state_dict())
         self.critic.load_state_dict(global_agent_critic.state_dict())
 
         self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
 
-    def save_weights(self, name):
-        torch.save({"actor_state_dict": self.actor.state_dict()}, f"weights/{name}.pth")
-
-    def load_weights(self, name):
-        checkpoint = torch.load(f"weights/{name}.pth")
-        actor_state_dict = checkpoint["actor_state_dict"]
-        self.actor.load_state_dict(actor_state_dict)
-
-    def update_networks(self):
+    def update_networks(self) -> None:
         self.soft_update_networks(self.actor, self.actor_target, self.tau)
         self.soft_update_networks(self.critic, self.critic_target, self.tau)
