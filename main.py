@@ -1,7 +1,7 @@
 import json
 from copy import deepcopy
 import numpy as np
-from numpy import random
+import random
 import torch
 from meta_dqn.meta_dqn_agent import MetaDQNAgent
 from option import Option
@@ -9,8 +9,6 @@ from typing import Any, Dict, Optional, List
 import os
 import pickle
 import gym
-# noinspection PyUnresolvedReferences
-import simple_goal_env
 # noinspection PyUnresolvedReferences
 import mujoco_maze
 from time import time
@@ -205,7 +203,6 @@ def get_args():
 
 def main() -> None:
     args = get_args()
-
     env = gym.make("Point4Rooms-v1")
 
     random.seed(args.seed)
