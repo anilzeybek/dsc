@@ -1,5 +1,4 @@
 import random
-from copy import deepcopy
 from typing import List, Callable, Optional
 import numpy as np
 from sklearn.svm import OneClassSVM
@@ -54,8 +53,7 @@ class Classifier:
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.one_class_trained, "one_class shouldn't be trained yet to train"
 
-        self.good_examples_to_sample = deepcopy(xs)
-
+        self.good_examples_to_sample = xs
         for arr in xs:
             if arr.tolist() == initial_obs.tolist():
                 self.for_last_option = True
@@ -64,17 +62,18 @@ class Classifier:
         self.one_class_svm.fit(xs)
         self.one_class_trained = True
 
-    def train_two_class(self, good_examples: List[np.ndarray], bad_examples: List[np.ndarray]) -> None:
+    def train_two_class(self, good_examples_to_refine: List[np.ndarray],
+                        bad_examples_to_refine: List[np.ndarray]) -> None:
         assert self.type_ == "init", "only init classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.one_class_refined, "one_class shouldn't be re-trained"
 
         # we are also using the data to train one class classifier for good_examples
-        good_examples = good_examples + deepcopy(self.good_examples_to_sample)
-        self.good_examples_to_sample = deepcopy(good_examples)
+        good_examples_to_refine = good_examples_to_refine + self.good_examples_to_sample
+        self.good_examples_to_sample = good_examples_to_refine
 
-        xs = np.array(good_examples + bad_examples)
-        ys = np.array([1 for _ in good_examples] + [0 for _ in bad_examples])
+        xs = np.array(good_examples_to_refine + bad_examples_to_refine)
+        ys = np.array([1 for _ in good_examples_to_refine] + [0 for _ in bad_examples_to_refine])
 
         two_class_svm = SVC(kernel="rbf", gamma="scale", class_weight="balanced")
         two_class_svm.fit(xs, ys)

@@ -72,7 +72,7 @@ def evaluate(env, agent_over_options, option_repertoire: List[Option], render=Fa
         next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict, render=render,
                                                                                    train_mode=False)
         total_reward += sum(reward_list)
-        env_dict = deepcopy(next_env_dict)
+        env_dict = next_env_dict
 
     print(f"{total_reward}\n")
 
@@ -82,7 +82,7 @@ def train(env: gym.Env, global_only=False):
     start = time()
     hyperparams = read_hyperparams()
 
-    initial_obs = deepcopy(env.reset()['observation'])
+    initial_obs = env.reset()['observation']
     initial_obs_covered = False
 
     global_option = Option("global", budget=1, env=env, parent_option=None,
@@ -119,7 +119,7 @@ def train(env: gym.Env, global_only=False):
             agent_over_options.step(env_dict['observation'], option_index, reward_list,
                                     next_env_dict['observation'], done)
 
-            env_dict = deepcopy(next_env_dict)
+            env_dict = next_env_dict
 
             if not global_only and \
                     not initial_obs_covered and \
@@ -132,8 +132,7 @@ def train(env: gym.Env, global_only=False):
                     k_steps_before = obs_history[0]
 
                 this_episode_used = True
-                created = option_without_init_classifier.create_init_classifier(k_steps_before,
-                                                                                initial_obs)
+                created = option_without_init_classifier.create_init_classifier(k_steps_before, initial_obs)
                 if created:
                     option_without_init_classifier.agent.load_global_weights(deepcopy(global_option.agent.actor),
                                                                              deepcopy(global_option.agent.critic))
