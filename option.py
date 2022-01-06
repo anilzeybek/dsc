@@ -2,32 +2,25 @@ from copy import deepcopy
 from typing import Dict, Tuple, List, Optional
 import numpy as np
 from ddpg.ddpg_agent import DDPGAgent
-from dqn.dqn_agent import DQNAgent
 from classifier import Classifier
 
 
 class Option:
-    def __init__(self, name: str, action_type: str, budget: int, env, parent_option: Optional,
+    def __init__(self, name: str, budget: int, env, parent_option: Optional,
                  min_examples_to_refine: int, req_num_to_create_init: int) -> None:
         self.name = name
-        self.action_type = action_type
         self.budget = budget
         self.env = env
         self.parent_option = parent_option
         self.min_examples_to_refine = min_examples_to_refine
         self.req_num_to_create_init = req_num_to_create_init
 
-        assert self.action_type in ['discrete', 'continuous'], "action_type must be either discrete or continuous"
         if self.name == "global" or self.name == "goal":
             assert parent_option is None, "global and goal options cant have parent option"
 
-        if self.action_type == "continuous":
-            self.agent = DDPGAgent(env.observation_space["observation"].shape[0], env.action_space.shape[0],
-                                   env.observation_space["desired_goal"].shape[0],
-                                   [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
-        else:
-            self.agent = DQNAgent(env.observation_space["observation"].shape[0], env.action_space.n,
-                                  env.observation_space["desired_goal"].shape[0], env.compute_reward)
+        self.agent = DDPGAgent(env.observation_space["observation"].shape[0], env.action_space.shape[0],
+                               env.observation_space["desired_goal"].shape[0],
+                               [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
 
         if parent_option:
             assert self.name != "global" or self.name != "goal"
@@ -107,8 +100,8 @@ class Option:
 
             next_obs = next_env_dict["observation"]
             next_achieved_goal = next_env_dict["achieved_goal"]
-            next_desired_goal = next_env_dict[
-                "desired_goal"] if self.name == "global" or self.name == "goal" else deepcopy(desired_goal)
+            next_desired_goal = next_env_dict["desired_goal"] \
+                if self.name == "global" or self.name == "goal" else deepcopy(desired_goal)
 
             reward = self.env.compute_reward(next_achieved_goal, desired_goal, None)[0]
             reward_list.append(reward)
@@ -153,9 +146,6 @@ class Option:
                         len(self.good_examples_to_refine) >= self.min_examples_to_refine and \
                         len(self.bad_examples_to_refine) >= self.min_examples_to_refine:
                     self.refine_init_classifier()
-
-        if done and self.action_type == "discrete":
-            self.agent.update_eps()
 
         return next_env_dict, reward_list, done
 

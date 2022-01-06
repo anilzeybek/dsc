@@ -85,14 +85,13 @@ def train(env: gym.Env, global_only=False):
     initial_state = deepcopy(env.reset()['observation'])
     initial_state_covered = False
 
-    action_type = 'discrete' if isinstance(env.action_space, gym.spaces.Discrete) else 'continuous'
-    global_option = Option("global", action_type, budget=1, env=env, parent_option=None,
+    global_option = Option("global", budget=1, env=env, parent_option=None,
                            min_examples_to_refine=hyperparams['min_examples_to_refine'],
                            req_num_to_create_init=hyperparams['req_num_to_create_init'])
 
     option_without_init_classifier: Optional[Option] = None
     if not global_only:
-        goal_option = Option("goal", action_type, budget=hyperparams['budget'], env=env, parent_option=None,
+        goal_option = Option("goal", budget=hyperparams['budget'], env=env, parent_option=None,
                              min_examples_to_refine=hyperparams['min_examples_to_refine'],
                              req_num_to_create_init=hyperparams['req_num_to_create_init'])
         option_without_init_classifier = goal_option
@@ -146,7 +145,6 @@ def train(env: gym.Env, global_only=False):
                     if not initial_state_covered:
                         option_without_init_classifier = Option(
                             str(agent_no),
-                            action_type,
                             hyperparams['budget'],
                             env=env,
                             parent_option=option_without_init_classifier,
