@@ -20,8 +20,6 @@ class DDPGAgent:
 
         self.hyperparams = self._read_hyperparams()['local_agent_continuous']
 
-        self.k_future = self.hyperparams['k_future']
-
         self.actor = Actor(self.obs_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                            hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'],
                            action_bounds=self.action_bounds)
@@ -29,17 +27,11 @@ class DDPGAgent:
                              hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'])
         self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
-        self.tau = self.hyperparams['tau']
-        self.gamma = self.hyperparams['gamma']
 
-        self.capacity = self.hyperparams['buffer_size']
-        self.memory = Memory(self.capacity, self.k_future, self.compute_reward_func)
+        self.actor_optimizer = Adam(self.actor.parameters(), self.hyperparams['actor_lr'])
+        self.critic_optimizer = Adam(self.critic.parameters(), self.hyperparams['critic_lr'])
 
-        self.batch_size = self.hyperparams['batch_size']
-        self.actor_lr = self.hyperparams['actor_lr']
-        self.critic_lr = self.hyperparams['critic_lr']
-        self.actor_optimizer = Adam(self.actor.parameters(), self.actor_lr)
-        self.critic_optimizer = Adam(self.critic.parameters(), self.critic_lr)
+        self.memory = Memory(self.hyperparams['buffer_size'], self.hyperparams['k_future'], self.compute_reward_func)
 
     @staticmethod
     def _read_hyperparams() -> Dict[str, Any]:
@@ -75,7 +67,7 @@ class DDPGAgent:
             t_params.data.copy_(tau * e_params.data + (1 - tau) * t_params.data)
 
     def train(self) -> None:
-        obs_s, actions, rewards, next_obs_s, goals = self.memory.sample(self.batch_size)
+        obs_s, actions, rewards, next_obs_s, goals = self.memory.sample(self.hyperparams['batch_size'])
 
         inputs = np.concatenate([obs_s, goals], axis=1)
         next_inputs = np.concatenate([next_obs_s, goals], axis=1)
@@ -89,8 +81,8 @@ class DDPGAgent:
 
         with torch.no_grad():
             target_q = self.critic_target(next_inputs_, self.actor_target(next_inputs_))
-            target_returns = rewards_ + self.gamma * target_q * (1 - dones_)
-            target_returns = torch.clamp(target_returns, -1 / (1 - self.gamma), 0)
+            target_returns = rewards_ + self.hyperparams['gamma'] * target_q * (1 - dones_)
+            target_returns = torch.clamp(target_returns, -1 / (1 - self.hyperparams['gamma']), 0)
 
         q_eval = self.critic(inputs_, actions_)
         critic_loss = (target_returns - q_eval).pow(2).mean()
@@ -115,5 +107,5 @@ class DDPGAgent:
         self.critic_target = deepcopy(self.critic)
 
     def update_networks(self) -> None:
-        self.soft_update_networks(self.actor, self.actor_target, self.tau)
-        self.soft_update_networks(self.critic, self.critic_target, self.tau)
+        self.soft_update_networks(self.actor, self.actor_target, self.hyperparams['tau'])
+        self.soft_update_networks(self.critic, self.critic_target, self.hyperparams['tau'])

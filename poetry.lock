@@ -7,6 +7,23 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "cpprb"
+version = "10.3.2"
+description = "ReplayBuffer for Reinforcement Learning written by C++ and Cython"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+numpy = "*"
+
+[package.extras]
+all = ["matplotlib", "pyvirtualdisplay", "sphinx", "sphinx-rtd-theme", "sphinx-automodapi", "coverage", "cython", "gym", "twine", "unittest-xml-reporting", "wheel"]
+api = ["sphinx", "sphinx-rtd-theme", "sphinx-automodapi"]
+dev = ["coverage", "cython", "gym", "twine", "unittest-xml-reporting", "wheel"]
+gym = ["matplotlib", "pyvirtualdisplay"]
+
+[[package]]
 name = "cycler"
 version = "0.11.0"
 description = "Composable style cycles"
@@ -239,12 +256,31 @@ python-versions = ">=3.6"
 [metadata]
 lock-version = "1.1"
 python-versions = "3.8.*"
-content-hash = "1a9202bed41561270d19c1e77388c101b70f2bd5366878561adf625681d541de"
+content-hash = "0a662ef5553ecae8b5110662de6be653d73d247b8adc4a94d7e6bd0f6c3b767e"
 
 [metadata.files]
 cloudpickle = [
     {file = "cloudpickle-2.0.0-py3-none-any.whl", hash = "sha256:6b2df9741d06f43839a3275c4e6632f7df6487a1f181f5f46a052d3c917c3d11"},
     {file = "cloudpickle-2.0.0.tar.gz", hash = "sha256:5cd02f3b417a783ba84a4ec3e290ff7929009fe51f6405423cfccfadd43ba4a4"},
+]
+cpprb = [
+    {file = "cpprb-10.3.2-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:2812d8f8e0c846da6da60e68e27e896afd481d8c9dd60b8714eb4968b6bd0090"},
+    {file = "cpprb-10.3.2-cp36-cp36m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f9082ad709d682f12cad9211e3c7c3086b2def213dc7e1563c8739d3f3a46ffc"},
+    {file = "cpprb-10.3.2-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:85556c5acf4dfc70fc0d6dcf1aede962d90b30959e660294240b4fe9c2a66f52"},
+    {file = "cpprb-10.3.2-cp36-cp36m-win_amd64.whl", hash = "sha256:8d3938ec9ab994f9f1ee63fd6086e7bfa7819da429a74c76f124e48ad887659d"},
+    {file = "cpprb-10.3.2-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:ddbc68f03ef27f19fc8513f2defca26993af6cbba23b43e38ab20a2cbd475234"},
+    {file = "cpprb-10.3.2-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8e372d2a8d5eb6f4dea1021d39b6262e2a98b15f28c3c545a9ac6edd63e210d8"},
+    {file = "cpprb-10.3.2-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:1fc3bfb65d0d8113bfdbb76ef9d3fdb731ca62180b73bb5669d6bb27d2b22142"},
+    {file = "cpprb-10.3.2-cp37-cp37m-win_amd64.whl", hash = "sha256:296ea40c79bb8408831020ae4d3eb573e4410ff7bc90104dfc993b902171e54f"},
+    {file = "cpprb-10.3.2-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:a76a393f79f5190fc3f032a0e68b64af2fadfe6430dd4fa50b3f75aec0338769"},
+    {file = "cpprb-10.3.2-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b09a542403ed0e424ee492bd7c0de53e8c37ba7cbcfb4b953c1eba3e5566e8df"},
+    {file = "cpprb-10.3.2-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:6c2ae09695db99c9a678629c130876618575ed579d82ec428e0741465ec1d3ca"},
+    {file = "cpprb-10.3.2-cp38-cp38-win_amd64.whl", hash = "sha256:2f383cf48ebb4b311b2bd1485ae1bc7c2360042e8ca96112de3585c46b437f90"},
+    {file = "cpprb-10.3.2-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:13146c18419da95e9c5dae0a7ff8c0d36e25b0e9a59c5ebdf2885e936978b8b9"},
+    {file = "cpprb-10.3.2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:877deacfaaa5e2222341b01513bd36f38af01c360a29e4e59fb72eedf2b3dee0"},
+    {file = "cpprb-10.3.2-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:c1df287dcf9157615bd341cbaeec8ca6805e164145af45b397cd4bab5a18c5b6"},
+    {file = "cpprb-10.3.2-cp39-cp39-win_amd64.whl", hash = "sha256:1dc38aec4c8c0388342fca4b147f5b0dad20b3c21cfcbe4ee248b531000bf8e0"},
+    {file = "cpprb-10.3.2.tar.gz", hash = "sha256:5c2f5296b5d75ab74dfe8b1b817e80ab8fdccd6432c22bac088c0ffa5cb41b25"},
 ]
 cycler = [
     {file = "cycler-0.11.0-py3-none-any.whl", hash = "sha256:3a27e95f763a428a739d2add979fa7494c912a32c17c4c38c4d5f082cad165a3"},

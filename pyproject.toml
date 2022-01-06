@@ -11,6 +11,7 @@ numpy = "^1.22.0"
 matplotlib = "^3.5.1"
 scikit-learn = "^1.0.2"
 gym = "^0.21.0"
+cpprb = "^10.3.2"
 
 [tool.poetry.dev-dependencies]
 

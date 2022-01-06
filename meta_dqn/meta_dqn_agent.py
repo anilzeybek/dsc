@@ -16,8 +16,8 @@ class MetaDQNAgent:
         self.action_size = action_size
         self.hyperparams = self._read_hyperparams()['agent_over_options']
 
-        self.Q_network = QNetwork(self.obs_size, self.action_size, self.hyperparams['hidden_1'],
-                                  self.hyperparams['hidden_2'])
+        self.Q_network = QNetwork(self.obs_size, self.action_size,
+                                  self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
         self.target_network = deepcopy(self.Q_network)
         self.optimizer = optim.Adam(self.Q_network.parameters(), lr=self.hyperparams['lr'])
 
@@ -77,10 +77,10 @@ class MetaDQNAgent:
         observations, actions, rewards_lists, next_observations, dones = experiences
         # Note that rewards_list is a python list, not tensor even not numpy
 
-        Q_current = self.Q_network(observations).gather(1, actions)
+        q_current = self.Q_network(observations).gather(1, actions)
         with torch.no_grad():
             a = self.Q_network(next_observations).argmax(1).unsqueeze(1)
-            Q_target_next = self.target_network(next_observations).gather(1, a)
+            q_target_next = self.target_network(next_observations).gather(1, a)
 
             discounted_reward = np.zeros((len(rewards_lists), 1))
             for i in range(len(rewards_lists)):
@@ -88,10 +88,10 @@ class MetaDQNAgent:
                     discounted_reward[i] += (self.hyperparams['gamma'] ** j) * rewards_lists[i][j]
 
             discounted_reward = torch.from_numpy(discounted_reward).float()
-            Q_target = discounted_reward + (self.hyperparams['gamma'] ** len(rewards_lists)) * Q_target_next * (
-                1 - dones)
+            q_target = discounted_reward + (self.hyperparams['gamma'] ** len(rewards_lists)) * q_target_next * (
+                    1 - dones)
 
-        loss = f.mse_loss(Q_current, Q_target)
+        loss = f.mse_loss(q_current, q_target)
 
         self.optimizer.zero_grad()
         loss.backward()
