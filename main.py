@@ -22,10 +22,10 @@ def read_hyperparams() -> Dict[str, Any]:
         return hyperparams
 
 
-def is_initial_state_covered(initial_state, option_repertoire):
+def is_initial_obs_covered(initial_obs, option_repertoire):
     for o in option_repertoire:
-        if o.init_classifier.check(initial_state):
-            print("------------Initial state covered!")
+        if o.init_classifier.check(initial_obs):
+            print("------------Initial obs covered!")
             return True
 
     return False
@@ -82,8 +82,8 @@ def train(env: gym.Env, global_only=False):
     start = time()
     hyperparams = read_hyperparams()
 
-    initial_state = deepcopy(env.reset()['observation'])
-    initial_state_covered = False
+    initial_obs = deepcopy(env.reset()['observation'])
+    initial_obs_covered = False
 
     global_option = Option("global", budget=1, env=env, parent_option=None,
                            min_examples_to_refine=hyperparams['min_examples_to_refine'],
@@ -122,7 +122,7 @@ def train(env: gym.Env, global_only=False):
             env_dict = deepcopy(next_env_dict)
 
             if not global_only and \
-                    not initial_state_covered and \
+                    not initial_obs_covered and \
                     not this_episode_used and \
                     option_without_init_classifier.termination_classifier.check(env_dict['observation']):
 
@@ -133,7 +133,7 @@ def train(env: gym.Env, global_only=False):
 
                 this_episode_used = True
                 created = option_without_init_classifier.create_init_classifier(k_steps_before,
-                                                                                initial_state)
+                                                                                initial_obs)
                 if created:
                     option_without_init_classifier.agent.load_global_weights(deepcopy(global_option.agent.actor),
                                                                              deepcopy(global_option.agent.critic))
@@ -141,8 +141,8 @@ def train(env: gym.Env, global_only=False):
                     agent_over_options.add_option()
                     option_repertoire.append(option_without_init_classifier)
 
-                    initial_state_covered = is_initial_state_covered(initial_state, option_repertoire[1:])
-                    if not initial_state_covered:
+                    initial_obs_covered = is_initial_obs_covered(initial_obs, option_repertoire[1:])
+                    if not initial_obs_covered:
                         option_without_init_classifier = Option(
                             str(agent_no),
                             hyperparams['budget'],

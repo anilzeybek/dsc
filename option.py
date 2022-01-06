@@ -63,15 +63,15 @@ class Option:
         assert self.init_classifier_created, \
             "to execute an option, its init classifier must be at least created"
 
-        starting_obs = deepcopy(env_dict["observation"])
+        starting_obs = env_dict["observation"]
         t = 0
 
         episode_dict = {
-            "state": [],
+            "obs": [],
             "action": [],
             "achieved_goal": [],
             "desired_goal": [],
-            "next_state": [],
+            "next_obs": [],
             "next_achieved_goal": []
         }
         obs = env_dict["observation"]
@@ -101,7 +101,7 @@ class Option:
             next_obs = next_env_dict["observation"]
             next_achieved_goal = next_env_dict["achieved_goal"]
             next_desired_goal = next_env_dict["desired_goal"] \
-                if self.name == "global" or self.name == "goal" else deepcopy(desired_goal)
+                if self.name == "global" or self.name == "goal" else desired_goal
 
             reward = self.env.compute_reward(next_achieved_goal, desired_goal, None)[0]
             reward_list.append(reward)
@@ -109,7 +109,7 @@ class Option:
             if not local_done:
                 local_done = self.termination_classifier.check(next_obs)
 
-            episode_dict["state"].append(obs)
+            episode_dict["obs"].append(obs)
             episode_dict["action"].append(action)
             episode_dict["achieved_goal"].append(achieved_goal)
             episode_dict["desired_goal"].append(desired_goal)
@@ -124,13 +124,13 @@ class Option:
                 break
 
         if train_mode:
-            episode_dict["state"].append(obs)
+            episode_dict["obs"].append(obs)
             episode_dict["achieved_goal"].append(achieved_goal)
             episode_dict["desired_goal"].append(desired_goal)
-            episode_dict["next_state"] = episode_dict["state"][1:]
+            episode_dict["next_obs"] = episode_dict["obs"][1:]
             episode_dict["next_achieved_goal"] = episode_dict["achieved_goal"][1:]
 
-            self.agent.store(deepcopy(episode_dict))
+            self.agent.store(episode_dict)
             for _ in range(self.budget):
                 self.agent.train()
 
@@ -149,8 +149,8 @@ class Option:
 
         return next_env_dict, reward_list, done
 
-    def create_init_classifier(self, successful_observation: np.ndarray, initial_state: np.ndarray) -> bool:
-        # initial_state is required because if list contains only it, it fails
+    def create_init_classifier(self, successful_observation: np.ndarray, initial_obs: np.ndarray) -> bool:
+        # initial_obs is required because if list contains only it, it fails
 
         assert not self.init_classifier_created or not self.init_classifier_refined, \
             "if you call this function, init classifier must be untouched"
@@ -160,7 +160,7 @@ class Option:
 
         if len(self.successful_observations_to_create_init_classifier) == self.req_num_to_create_init:
             self.init_classifier.train_one_class(self.successful_observations_to_create_init_classifier,
-                                                 initial_state)
+                                                 initial_obs)
             self.init_classifier_created = True
             print(f"option {self.name}: init classifier created")
             return True

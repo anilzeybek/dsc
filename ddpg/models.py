@@ -4,18 +4,18 @@ from torch.nn import functional as f
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, goal_dim: int, hidden_1=256, hidden_2=256,
+    def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, hidden_1=256, hidden_2=256,
                  action_bounds=(-1, 1)):
         super(Actor, self).__init__()
 
-        self.state_dim = state_dim
+        self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.goal_dim = goal_dim
         self.hidden_1 = hidden_1
         self.hidden_2 = hidden_2
         self.action_bounds = torch.Tensor(action_bounds)
 
-        self.fc1 = nn.Linear(self.state_dim + self.goal_dim, self.hidden_1)
+        self.fc1 = nn.Linear(self.obs_dim + self.goal_dim, self.hidden_1)
         self.fc2 = nn.Linear(self.hidden_1, self.hidden_2)
         self.output = nn.Linear(self.hidden_2, self.action_dim)
 
@@ -28,16 +28,16 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, goal_dim: int, hidden_1=256, hidden_2=256):
+    def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, hidden_1=256, hidden_2=256):
         super(Critic, self).__init__()
 
-        self.state_dim = state_dim
+        self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.goal_dim = goal_dim
         self.hidden_1 = hidden_1
         self.hidden_2 = hidden_2
 
-        self.fc1 = nn.Linear(self.state_dim + self.goal_dim + self.action_dim, self.hidden_1)
+        self.fc1 = nn.Linear(self.obs_dim + self.goal_dim + self.action_dim, self.hidden_1)
         self.fc2 = nn.Linear(self.hidden_1, self.hidden_2)
         self.output = nn.Linear(self.hidden_2, 1)
 

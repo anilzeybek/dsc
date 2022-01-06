@@ -10,9 +10,9 @@ from torch import nn
 
 
 class DDPGAgent:
-    def __init__(self, state_dim: int, action_dim: int, goal_dim: int, action_bounds: List[float],
+    def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, action_bounds: List[float],
                  compute_reward_func: Callable) -> None:
-        self.state_dim = state_dim
+        self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.goal_dim = goal_dim
         self.action_bounds = action_bounds
@@ -22,10 +22,10 @@ class DDPGAgent:
 
         self.k_future = self.hyperparams['k_future']
 
-        self.actor = Actor(self.state_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
+        self.actor = Actor(self.obs_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                            hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'],
                            action_bounds=self.action_bounds)
-        self.critic = Critic(self.state_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
+        self.critic = Critic(self.obs_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                              hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'])
         self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
@@ -47,12 +47,12 @@ class DDPGAgent:
             hyperparams = json.load(f)
             return hyperparams
 
-    def act(self, state: np.ndarray, goal: np.ndarray, train_mode=True) -> np.ndarray:
-        state = np.expand_dims(state, axis=0)
+    def act(self, obs: np.ndarray, goal: np.ndarray, train_mode=True) -> np.ndarray:
+        obs = np.expand_dims(obs, axis=0)
         goal = np.expand_dims(goal, axis=0)
 
         with torch.no_grad():
-            x = np.concatenate([state, goal], axis=1)
+            x = np.concatenate([obs, goal], axis=1)
             x = torch.from_numpy(x).float()
             action = self.actor(x)[0].numpy()
 
@@ -75,10 +75,10 @@ class DDPGAgent:
             t_params.data.copy_(tau * e_params.data + (1 - tau) * t_params.data)
 
     def train(self) -> None:
-        states, actions, rewards, next_states, goals = self.memory.sample(self.batch_size)
+        obs_s, actions, rewards, next_obs_s, goals = self.memory.sample(self.batch_size)
 
-        inputs = np.concatenate([states, goals], axis=1)
-        next_inputs = np.concatenate([next_states, goals], axis=1)
+        inputs = np.concatenate([obs_s, goals], axis=1)
+        next_inputs = np.concatenate([next_obs_s, goals], axis=1)
         dones = rewards + 1
 
         inputs_ = torch.Tensor(inputs)

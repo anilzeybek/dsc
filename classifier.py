@@ -23,7 +23,7 @@ class Classifier:
         self.one_class_trained = False
         self.one_class_refined = False
         self.good_examples_to_sample: List[np.ndarray] = []
-        self.initial_state = None
+        self.initial_obs = None
 
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
             assert self.env_termination_checker is not None, \
@@ -38,7 +38,7 @@ class Classifier:
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
             return self.env_termination_checker(x)
 
-        if self.for_last_option and x.tolist() == self.initial_state.tolist():
+        if self.for_last_option and x.tolist() == self.initial_obs.tolist():
             return True
 
         return self.one_class_svm.predict([x])[0] == 1
@@ -49,7 +49,7 @@ class Classifier:
 
         return random.sample(self.good_examples_to_sample, k=1)[0]
 
-    def train_one_class(self, xs: List[np.ndarray], initial_state: np.ndarray) -> None:
+    def train_one_class(self, xs: List[np.ndarray], initial_obs: np.ndarray) -> None:
         assert self.type_ == "init", "only init classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.one_class_trained, "one_class shouldn't be trained yet to train"
@@ -57,9 +57,9 @@ class Classifier:
         self.good_examples_to_sample = deepcopy(xs)
 
         for arr in xs:
-            if arr.tolist() == initial_state.tolist():
+            if arr.tolist() == initial_obs.tolist():
                 self.for_last_option = True
-                self.initial_state = initial_state
+                self.initial_obs = initial_obs
 
         self.one_class_svm.fit(xs)
         self.one_class_trained = True
