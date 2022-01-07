@@ -4,9 +4,9 @@ import json
 import numpy as np
 from torch.optim import Adam
 from .models import Actor, Critic
-from .memory import Memory
 from copy import deepcopy
 from torch import nn
+from cpprb import ReplayBuffer
 
 
 class DDPGAgent:
@@ -31,7 +31,14 @@ class DDPGAgent:
         self.actor_optimizer = Adam(self.actor.parameters(), self.hyperparams['actor_lr'])
         self.critic_optimizer = Adam(self.critic.parameters(), self.hyperparams['critic_lr'])
 
-        self.memory = Memory(self.hyperparams['buffer_size'], self.hyperparams['k_future'], self.compute_reward_func)
+        self.rb = ReplayBuffer(self.hyperparams['buffer_size'], env_dict={
+            "obs": {"shape": obs_dim},
+            "action": {"shape": action_dim},
+            "reward": {},
+            "next_obs": {"shape": obs_dim},
+            "goal": {"shape": goal_dim},
+        })
+        self.store_count = 0
 
     @staticmethod
     def _read_hyperparams() -> Dict[str, Any]:
@@ -59,7 +66,28 @@ class DDPGAgent:
         return action
 
     def store(self, episode_dict: Dict[str, List[np.ndarray]]) -> None:
-        self.memory.add(episode_dict)
+        # TODO: slow, fix it
+        episode_len = len(episode_dict['obs'])
+        for t in range(episode_len):
+            obs = episode_dict['obs'][t]
+            action = episode_dict['action'][t]
+            reward = episode_dict['reward'][t]
+            next_obs = episode_dict['next_obs'][t]
+            goal = episode_dict['desired_goal'][t]
+            next_achieved = episode_dict['next_achieved_goal'][t]
+
+            self.rb.add(obs=obs, action=action, reward=reward, next_obs=next_obs, goal=goal)
+            self.store_count += 1
+            for _ in range(self.hyperparams['k_future']):
+                future_idx = np.random.randint(low=t, high=episode_len)
+                new_goal = episode_dict['next_achieved_goal'][future_idx]
+                new_reward = self.compute_reward_func(next_achieved, new_goal, None)[0]
+                self.rb.add(obs=obs, action=action, reward=new_reward, next_obs=next_obs, goal=new_goal)
+                self.store_count += 1
+
+        if self.store_count >= 250:
+            self.rb.on_episode_end()
+            self.store_count = 0
 
     @staticmethod
     def soft_update_networks(local_model: nn.Module, target_model: nn.Module, tau=0.05) -> None:
@@ -67,16 +95,16 @@ class DDPGAgent:
             t_params.data.copy_(tau * e_params.data + (1 - tau) * t_params.data)
 
     def train(self) -> None:
-        obs_s, actions, rewards, next_obs_s, goals = self.memory.sample(self.hyperparams['batch_size'])
+        sample = self.rb.sample(self.hyperparams['batch_size'])
 
-        inputs = np.concatenate([obs_s, goals], axis=1)
-        next_inputs = np.concatenate([next_obs_s, goals], axis=1)
-        dones = rewards + 1
+        inputs = np.concatenate([sample['obs'], sample['goal']], axis=1)
+        next_inputs = np.concatenate([sample['next_obs'], sample['goal']], axis=1)
+        dones = sample['reward'] + 1
 
         inputs_ = torch.Tensor(inputs)
-        rewards_ = torch.Tensor(rewards)
+        rewards_ = torch.Tensor(sample['reward'])
         next_inputs_ = torch.Tensor(next_inputs)
-        actions_ = torch.Tensor(actions)
+        actions_ = torch.Tensor(sample['action'])
         dones_ = torch.Tensor(dones).long()
 
         with torch.no_grad():

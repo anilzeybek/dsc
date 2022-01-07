@@ -69,6 +69,7 @@ class Option:
         episode_dict = {
             "obs": [],
             "action": [],
+            "reward": [],
             "achieved_goal": [],
             "desired_goal": [],
             "next_obs": [],
@@ -81,11 +82,12 @@ class Option:
 
         reward_list = []
 
-        local_done = False
+        goal_achieved = False
         done = False
         next_env_dict = {}
         while t < self.budget:
             action = self.agent.act(obs, desired_goal, train_mode=train_mode)
+            # TODO: following makes action inside boundaries, make it a separate function
             for i in range(len(self.env.action_space.low)):
                 if self.env.action_space.low[i] > action[i]:
                     action[i] = self.env.action_space.low[i]
@@ -94,25 +96,27 @@ class Option:
 
             assert self.env.action_space.contains(action)
 
-            next_env_dict, _, done, _ = self.env.step(action)
+            next_env_dict, reward, done, _ = self.env.step(action)
             if render:
                 self.env.render()
 
             next_obs = next_env_dict["observation"]
             next_achieved_goal = next_env_dict["achieved_goal"]
-            next_desired_goal = next_env_dict["desired_goal"] \
-                if self.name == "global" or self.name == "goal" else desired_goal
+            next_desired_goal = next_env_dict[
+                "desired_goal"] if self.name == "global" or self.name == "goal" else desired_goal
 
-            reward = self.env.compute_reward(next_achieved_goal, desired_goal, None)[0]
             reward_list.append(reward)
-
-            if not local_done:
-                local_done = self.termination_classifier.check(next_obs)
+            if not goal_achieved:
+                # if goal_achieved becomes true once, it should stay true
+                goal_achieved = self.termination_classifier.check(next_obs)
 
             episode_dict["obs"].append(obs)
             episode_dict["action"].append(action)
+            episode_dict["reward"].append(reward)
             episode_dict["achieved_goal"].append(achieved_goal)
             episode_dict["desired_goal"].append(desired_goal)
+            episode_dict["next_obs"].append(next_obs)
+            episode_dict["next_achieved_goal"].append(next_achieved_goal)
 
             obs = next_obs
             achieved_goal = next_achieved_goal
@@ -120,24 +124,17 @@ class Option:
 
             t += 1
 
-            if not train_mode and local_done:
+            if not train_mode and goal_achieved:
                 break
 
         if train_mode:
-            episode_dict["obs"].append(obs)
-            episode_dict["achieved_goal"].append(achieved_goal)
-            episode_dict["desired_goal"].append(desired_goal)
-            episode_dict["next_obs"] = episode_dict["obs"][1:]
-            episode_dict["next_achieved_goal"] = episode_dict["achieved_goal"][1:]
-
             self.agent.store(episode_dict)
             for _ in range(self.budget):
                 self.agent.train()
 
             self.agent.update_networks()
-
             if self.name != "global":
-                if local_done:
+                if goal_achieved:
                     self.good_examples_to_refine.append(starting_obs)
                 else:
                     self.bad_examples_to_refine.append(starting_obs)
@@ -180,7 +177,7 @@ class Option:
         self.good_examples_to_refine = []
         self.bad_examples_to_refine = []
         self.env = None
-        self.agent.memory = None
+        self.agent.rb = None
         self.agent.compute_reward_func = None
         self.init_classifier.env_termination_checker = None
         self.termination_classifier.env_termination_checker = None

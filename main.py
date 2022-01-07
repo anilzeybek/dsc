@@ -192,7 +192,7 @@ def get_args():
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--dynamic_goal', default=False, action='store_true')
     parser.add_argument('--global_only', default=False, action='store_true')
-    parser.add_argument('--seed', type=int, default=49)
+    parser.add_argument('--seed', type=int, default=32)
 
     args = parser.parse_args()
     return args
