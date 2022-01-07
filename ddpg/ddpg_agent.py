@@ -7,6 +7,7 @@ from .models import Actor, Critic
 from copy import deepcopy
 from torch import nn
 from cpprb import ReplayBuffer
+import torch.nn.functional as F
 
 
 class DDPGAgent:
@@ -107,17 +108,13 @@ class DDPGAgent:
         actions_ = torch.Tensor(sample['action'])
         dones_ = torch.Tensor(dones).long()
 
+        q_current = self.critic(inputs_, actions_)
         with torch.no_grad():
-            target_q = self.critic_target(next_inputs_, self.actor_target(next_inputs_))
-            target_returns = rewards_ + self.hyperparams['gamma'] * target_q * (1 - dones_)
-            target_returns = torch.clamp(target_returns, -1 / (1 - self.hyperparams['gamma']), 0)
+            q_target_next = self.critic_target(next_inputs_, self.actor_target(next_inputs_))
+            q_target = rewards_ + self.hyperparams['gamma'] * q_target_next * (1 - dones_)
 
-        q_eval = self.critic(inputs_, actions_)
-        critic_loss = (target_returns - q_eval).pow(2).mean()
-
-        a = self.actor(inputs_)
-        actor_loss = -self.critic(inputs_, a).mean()
-        actor_loss += a.pow(2).mean()
+        critic_loss = F.mse_loss(q_target, q_current)
+        actor_loss = -self.critic(inputs_, self.actor(inputs_)).mean()
 
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
