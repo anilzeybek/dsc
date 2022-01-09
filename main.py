@@ -9,7 +9,6 @@ from typing import Any, Dict, Optional, List
 import os
 import pickle
 import gym
-# noinspection PyUnresolvedReferences
 import mujoco_maze
 from time import time
 import argparse
@@ -42,8 +41,8 @@ def test(env, global_only=False, dynamic_goal=False):
         if o.name == "global" or o.name == "goal":
             o.termination_classifier.env_termination_checker = o.env.termination
 
-    agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0],
-                                      action_size=len(option_repertoire))
+    agent_over_options = MetaDQNAgent(obs_dim=env.observation_space["observation"].shape[0],
+                                      action_dim=len(option_repertoire))
     agent_over_options.load()
 
     while True:
@@ -98,8 +97,8 @@ def train(env: gym.Env, global_only=False):
 
     agent_no = 2  # to match the option index
     option_repertoire: List[Option] = [global_option]
-    agent_over_options = MetaDQNAgent(obs_size=env.observation_space["observation"].shape[0],
-                                      action_size=len(option_repertoire))
+    agent_over_options = MetaDQNAgent(obs_dim=env.observation_space["observation"].shape[0],
+                                      action_dim=len(option_repertoire))
 
     all_rewards = []
     for episode_num in range(hyperparams['max_episodes']):
