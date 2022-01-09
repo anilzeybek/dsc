@@ -1,5 +1,4 @@
 import json
-from copy import deepcopy
 import numpy as np
 import random
 import torch
@@ -133,8 +132,8 @@ def train(env: gym.Env, global_only=False):
                 this_episode_used = True
                 created = option_without_init_classifier.create_init_classifier(k_steps_before, initial_obs)
                 if created:
-                    option_without_init_classifier.agent.load_global_weights(deepcopy(global_option.agent.actor),
-                                                                             deepcopy(global_option.agent.critic))
+                    option_without_init_classifier.agent.load_global_weights(global_option.agent.actor,
+                                                                             global_option.agent.critic)
 
                     agent_over_options.add_option()
                     option_repertoire.append(option_without_init_classifier)
