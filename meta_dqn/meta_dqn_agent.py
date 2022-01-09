@@ -2,7 +2,7 @@ import json
 from typing import Any, Dict, List
 import numpy as np
 import torch
-import torch.nn.functional as f
+import torch.nn.functional as F
 import torch.optim as optim
 from option import Option
 from .model import QNetwork
@@ -11,12 +11,12 @@ from copy import deepcopy
 
 
 class MetaDQNAgent:
-    def __init__(self, obs_size, action_size) -> None:
-        self.obs_size = obs_size
-        self.action_size = action_size
+    def __init__(self, obs_dim, action_dim) -> None:
+        self.obs_dim = obs_dim
+        self.action_dim = action_dim
         self.hyperparams = self._read_hyperparams()['agent_over_options']
 
-        self.Q_network = QNetwork(self.obs_size, self.action_size,
+        self.Q_network = QNetwork(self.obs_dim, self.action_dim,
                                   self.hyperparams['hidden_1'], self.hyperparams['hidden_2'])
         self.target_network = deepcopy(self.Q_network)
         self.optimizer = optim.Adam(self.Q_network.parameters(), lr=self.hyperparams['lr'])
@@ -27,8 +27,8 @@ class MetaDQNAgent:
         self.learn_count = 0
 
     def add_option(self):
-        self.action_size += 1
-        self.Q_network.change_last_layer(self.action_size)
+        self.action_dim += 1
+        self.Q_network.change_last_layer(self.action_dim)
         self.target_network = deepcopy(self.Q_network)
 
     @staticmethod
@@ -77,6 +77,7 @@ class MetaDQNAgent:
         observations, actions, rewards_lists, next_observations, dones = experiences
         # Note that rewards_list is a python list, not tensor even not numpy
 
+        # TODO: i think this is not working as expected, gamma^ shouldn't be big if rewards_list elements are simple num
         q_current = self.Q_network(observations).gather(1, actions)
         with torch.no_grad():
             a = self.Q_network(next_observations).argmax(1).unsqueeze(1)
@@ -85,13 +86,12 @@ class MetaDQNAgent:
             discounted_reward = np.zeros((len(rewards_lists), 1))
             for i in range(len(rewards_lists)):
                 for j in range(len(rewards_lists[i])):
-                    discounted_reward[i] += (self.hyperparams['gamma'] ** j) * rewards_lists[i][j]
+                    discounted_reward[i] += (self.hyperparams['gamma'] ** (j + 1)) * rewards_lists[i][j]
 
-            discounted_reward = torch.from_numpy(discounted_reward).float()
-            q_target = discounted_reward + (self.hyperparams['gamma'] ** len(rewards_lists)) * q_target_next * (
-                    1 - dones)
+            discounted_reward_ = torch.from_numpy(discounted_reward).float()
+            q_target = discounted_reward_ + (self.hyperparams['gamma'] ** len(rewards_lists)) * q_target_next * (1 - dones)
 
-        loss = f.mse_loss(q_current, q_target)
+        loss = F.mse_loss(q_current, q_target)
 
         self.optimizer.zero_grad()
         loss.backward()
