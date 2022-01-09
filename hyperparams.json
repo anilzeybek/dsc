@@ -1,31 +1,31 @@
 {
-  "budget": 40,
-  "req_num_to_create_init": 30,
-  "num_steps_before": 20,
-  "min_examples_to_refine": 60,
-  "max_episodes": 300,
-  "agent_over_options": {
-    "lr": 1e-3,
-    "buffer_size": 10000,
-    "batch_size": 64,
-    "gamma": 0.99,
-    "sync_target_every": 1000,
-    "update_every": 4,
-    "eps_start": 1.0,
-    "eps_end": 0.01,
-    "eps_decay": 0.995,
-    "hidden_1": 64,
-    "hidden_2": 64
-  },
-  "local_agent_continuous": {
-    "actor_lr": 1e-3,
-    "critic_lr": 1e-3,
-    "buffer_size": 100000,
-    "batch_size": 64,
-    "gamma": 0.98,
-    "tau": 0.05,
-    "k_future": 4,
-    "hidden_1": 128,
-    "hidden_2": 128
-  }
+    "budget": 40,
+    "req_num_to_create_init": 30,
+    "num_steps_before": 20,
+    "min_examples_to_refine": 60,
+    "max_episodes": 300,
+    "agent_over_options": {
+        "lr": 1e-3,
+        "buffer_size": 10000,
+        "batch_size": 64,
+        "gamma": 0.99,
+        "sync_target_every": 1000,
+        "update_every": 4,
+        "eps_start": 1.0,
+        "eps_end": 0.01,
+        "eps_decay": 0.995,
+        "hidden_1": 64,
+        "hidden_2": 64
+    },
+    "local_agent_continuous": {
+        "actor_lr": 1e-3,
+        "critic_lr": 1e-3,
+        "buffer_size": 100000,
+        "batch_size": 64,
+        "gamma": 0.98,
+        "tau": 0.05,
+        "k_future": 4,
+        "hidden_1": 128,
+        "hidden_2": 128
+    }
 }
