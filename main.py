@@ -20,7 +20,7 @@ def read_hyperparams() -> Dict[str, Any]:
         return hyperparams
 
 
-def is_initial_obs_covered(initial_obs, option_repertoire):
+def is_initial_obs_covered(initial_obs: np.ndarray, option_repertoire: List[Option]):
     for o in option_repertoire:
         if o.init_classifier.check(initial_obs):
             print("------------Initial obs covered!")
@@ -29,7 +29,7 @@ def is_initial_obs_covered(initial_obs, option_repertoire):
     return False
 
 
-def test(env, global_only=False, dynamic_goal=False):
+def test(env: gym.Env, global_only=False, dynamic_goal=False):
     print("----TEST----")
 
     with open(f"./train_results/options.pickle", 'rb') as f:
@@ -50,7 +50,7 @@ def test(env, global_only=False, dynamic_goal=False):
             env.change_goal()
 
 
-def evaluate(env, agent_over_options, option_repertoire: List[Option], render=False, global_only=False):
+def evaluate(env: gym.Env, agent_over_options: MetaDQNAgent, option_repertoire: List[Option], render=False, global_only=False):
     print("\n---EVALUATING:")
 
     env_dict = env.reset()

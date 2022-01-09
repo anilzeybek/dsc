@@ -1,12 +1,14 @@
+from __future__ import annotations
 from copy import deepcopy
 from typing import Dict, Tuple, List, Optional
 import numpy as np
 from ddpg.ddpg_agent import DDPGAgent
 from classifier import Classifier
+import gym
 
 
 class Option:
-    def __init__(self, name: str, budget: int, env, parent_option: Optional,
+    def __init__(self, name: str, budget: int, env: gym.Env, parent_option: Optional[Option],
                  min_examples_to_refine: int, req_num_to_create_init: int) -> None:
         self.name = name
         self.budget = budget

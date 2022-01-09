@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 class DDPGAgent:
     def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, action_bounds: List[float],
-                 compute_reward_func: Callable) -> None:
+                 compute_reward_func: Callable[[np.ndarray, np.ndarray, Any], np.ndarray]) -> None:
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.goal_dim = goal_dim

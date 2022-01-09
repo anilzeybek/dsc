@@ -22,7 +22,7 @@ class Classifier:
         self.one_class_trained = False
         self.one_class_refined = False
         self.good_examples_to_sample: List[np.ndarray] = []
-        self.initial_obs = None
+        self.initial_obs: Optional[np.ndarray] = None
 
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
             assert self.env_termination_checker is not None, \
