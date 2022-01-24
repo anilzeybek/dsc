@@ -32,7 +32,7 @@ def is_initial_obs_covered(initial_obs: np.ndarray, option_repertoire: List[Opti
 def test(env: gym.Env, global_only=False, dynamic_goal=False):
     print("----TEST----")
 
-    with open(f"./train_results/options.pickle", 'rb') as f:
+    with open(f"./saved_trainings/options.pickle", 'rb') as f:
         option_repertoire: List[Option] = pickle.load(f)
 
     for o in option_repertoire:
@@ -162,7 +162,7 @@ def train(env: gym.Env, global_only=False):
     end = time()
     print("training completed, elapsed time: ", end - start)
 
-    os.makedirs("./train_results", exist_ok=True)
+    os.makedirs("./saved_trainings", exist_ok=True)
     os.makedirs("./plots", exist_ok=True)
 
     all_rewards = np.array(all_rewards)
@@ -177,7 +177,7 @@ def train(env: gym.Env, global_only=False):
     for o in option_repertoire:
         o.freeze()
 
-    with open(f'./train_results/options.pickle', 'wb') as f:
+    with open(f'./saved_trainings/options.pickle', 'wb') as f:
         pickle.dump(option_repertoire, f)
 
     agent_over_options.save()
