@@ -1,7 +1,7 @@
-.vscode
-__pycache__
-.mypy_cache
+.vscode/
+__pycache__/
+.mypy_cache/
 train_results/
-.idea
+.idea/
 deneme.py
 plots/
