@@ -74,19 +74,19 @@ class MetaDQNAgent:
         self.eps = max(self.hyperparams['eps_end'], self.hyperparams['eps_decay'] * self.eps)
 
     def _learn(self, experiences) -> None:
-        observations, actions, rewards_lists, next_observations, dones = experiences
+        observations, actions, reward_lists, next_observations, dones = experiences
 
         q_current = self.Q_network(observations).gather(1, actions)
         with torch.no_grad():
             a = self.Q_network(next_observations).argmax(1).unsqueeze(1)
             q_target_next = self.target_network(next_observations).gather(1, a)
 
-            lengths = torch.zeros((len(rewards_lists), 1))
-            discounted_reward = torch.zeros((len(rewards_lists), 1))
-            for i in range(len(rewards_lists)):
-                lengths[i] = len(rewards_lists[i])
-                for j in range(len(rewards_lists[i])):
-                    discounted_reward[i] += (self.hyperparams['gamma'] ** (j + 1)) * rewards_lists[i][j]
+            lengths = torch.zeros((len(reward_lists), 1))
+            discounted_reward = torch.zeros((len(reward_lists), 1))
+            for i, reward_list in enumerate(reward_lists):
+                lengths[i] = len(reward_list)
+                for j, reward in enumerate(reward_list):
+                    discounted_reward[i] += (self.hyperparams['gamma'] ** (j + 1)) * reward
 
             q_target = discounted_reward + torch.pow(self.hyperparams['gamma'], lengths) * q_target_next * (1 - dones)
 
