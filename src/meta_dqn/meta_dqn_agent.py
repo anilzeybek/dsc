@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from option import Option
 from .model import QNetwork
-from .replay_buffer import ReplayBuffer
+from cpprb import ReplayBuffer
 from copy import deepcopy
 
 
@@ -22,7 +22,14 @@ class MetaDQNAgent:
         self.optimizer = optim.Adam(self.Q_network.parameters(), lr=self.hyperparams['lr'])
 
         self.eps = self.hyperparams['eps_start']
-        self.memory = ReplayBuffer(self.hyperparams['buffer_size'])
+        self.rb = ReplayBuffer(self.hyperparams['buffer_size'], env_dict={
+            "obs": {"shape": obs_dim},
+            "action": {"shape": action_dim},
+            "discounted_reward": {},
+            "next_obs": {"shape": obs_dim},
+            "length": {},
+            "done": {},
+        })
         self.t_step = 0
         self.learn_count = 0
 
@@ -60,35 +67,38 @@ class MetaDQNAgent:
         return selected_index
 
     def step(self, obs, action, reward_list, next_obs, done) -> None:
-        self.memory.store_transition(obs, action, reward_list, next_obs, done)
+        discounted_reward = 0
+        for i, reward in enumerate(reward_list):
+            discounted_reward += (self.hyperparams['gamma'] ** (i + 1)) * reward
+
+        self.rb.add(obs=obs, action=action, discounted_reward=discounted_reward,
+                    next_obs=next_obs, done=done, length=len(reward_list))
 
         self.t_step = (self.t_step + 1) % self.hyperparams['update_every']
-        if self.t_step == 0 and len(self.memory) > self.hyperparams['batch_size']:
-            experiences = self.memory.sample(self.hyperparams['batch_size'])
-            self._learn(experiences)
-
+        if self.t_step == 0:
+            self._train()
         if done:
             self._update_eps()
 
     def _update_eps(self) -> None:
         self.eps = max(self.hyperparams['eps_end'], self.hyperparams['eps_decay'] * self.eps)
 
-    def _learn(self, experiences) -> None:
-        observations, actions, reward_lists, next_observations, dones = experiences
+    def _train(self) -> None:
+        sample = self.rb.sample(self.hyperparams['batch_size'])
+
+        observations = torch.Tensor(sample['obs'])
+        actions = torch.Tensor(sample['action']).long()
+        discounted_rewards = torch.Tensor(sample['discounted_reward'])
+        next_observations = torch.Tensor(sample['next_obs'])
+        lengths = torch.Tensor(sample['length']).long()
+        dones = torch.Tensor(sample['done']).long()
 
         q_current = self.Q_network(observations).gather(1, actions)
         with torch.no_grad():
             a = self.Q_network(next_observations).argmax(1).unsqueeze(1)
             q_target_next = self.target_network(next_observations).gather(1, a)
 
-            lengths = torch.zeros((len(reward_lists), 1))
-            discounted_reward = torch.zeros((len(reward_lists), 1))
-            for i, reward_list in enumerate(reward_lists):
-                lengths[i] = len(reward_list)
-                for j, reward in enumerate(reward_list):
-                    discounted_reward[i] += (self.hyperparams['gamma'] ** (j + 1)) * reward
-
-            q_target = discounted_reward + torch.pow(self.hyperparams['gamma'], lengths) * q_target_next * (1 - dones)
+            q_target = discounted_rewards + torch.pow(self.hyperparams['gamma'], lengths) * q_target_next * (1 - dones)
 
         loss = F.mse_loss(q_current, q_target)
 

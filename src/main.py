@@ -189,7 +189,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--dynamic_goal', default=False, action='store_true')
     parser.add_argument('--global_only', default=False, action='store_true')
-    parser.add_argument('--seed', type=int, default=32)
+    parser.add_argument('--seed', type=int, default=14)
 
     args = parser.parse_args()
     return args
