@@ -75,21 +75,20 @@ class MetaDQNAgent:
 
     def _learn(self, experiences) -> None:
         observations, actions, rewards_lists, next_observations, dones = experiences
-        # Note that rewards_list is a python list, not tensor even not numpy
 
-        # TODO: i think this is not working as expected, gamma^ shouldn't be big if rewards_list elements are simple num
         q_current = self.Q_network(observations).gather(1, actions)
         with torch.no_grad():
             a = self.Q_network(next_observations).argmax(1).unsqueeze(1)
             q_target_next = self.target_network(next_observations).gather(1, a)
 
-            discounted_reward = np.zeros((len(rewards_lists), 1))
+            lengths = torch.zeros((len(rewards_lists), 1))
+            discounted_reward = torch.zeros((len(rewards_lists), 1))
             for i in range(len(rewards_lists)):
+                lengths[i] = len(rewards_lists[i])
                 for j in range(len(rewards_lists[i])):
                     discounted_reward[i] += (self.hyperparams['gamma'] ** (j + 1)) * rewards_lists[i][j]
 
-            discounted_reward_ = torch.from_numpy(discounted_reward).float()
-            q_target = discounted_reward_ + (self.hyperparams['gamma'] ** len(rewards_lists)) * q_target_next * (1 - dones)
+            q_target = discounted_reward + torch.pow(self.hyperparams['gamma'], lengths) * q_target_next * (1 - dones)
 
         loss = F.mse_loss(q_current, q_target)
 
