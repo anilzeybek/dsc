@@ -4,7 +4,7 @@ import random
 import torch
 from meta_dqn.meta_dqn_agent import MetaDQNAgent
 from option import Option
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List
 import os
 import pickle
 import gym
@@ -20,7 +20,7 @@ def read_hyperparams() -> Dict[str, Any]:
         return hyperparams
 
 
-def is_initial_obs_covered(initial_obs: np.ndarray, option_repertoire: List[Option]):
+def is_initial_obs_covered(initial_obs: np.ndarray, option_repertoire: List[Option]) -> bool:
     for o in option_repertoire:
         if o.init_classifier.check(initial_obs):
             print("------------Initial obs covered!")
@@ -29,7 +29,7 @@ def is_initial_obs_covered(initial_obs: np.ndarray, option_repertoire: List[Opti
     return False
 
 
-def test(env: gym.Env, global_only=False, dynamic_goal=False):
+def test(env: gym.Env, global_only=False, dynamic_goal=False) -> None:
     print("----TEST----")
 
     with open(f"./saved_trainings/options.pickle", 'rb') as f:
@@ -50,7 +50,7 @@ def test(env: gym.Env, global_only=False, dynamic_goal=False):
             env.change_goal()
 
 
-def evaluate(env: gym.Env, agent_over_options: MetaDQNAgent, option_repertoire: List[Option], render=False, global_only=False):
+def evaluate(env: gym.Env, agent_over_options: MetaDQNAgent, option_repertoire: List[Option], render=False, global_only=False) -> None:
     print("\n---EVALUATING:")
 
     env_dict = env.reset()
@@ -75,7 +75,7 @@ def evaluate(env: gym.Env, agent_over_options: MetaDQNAgent, option_repertoire: 
     print(f"{total_reward}\n")
 
 
-def train(env: gym.Env, global_only=False):
+def train(env: gym.Env, global_only=False) -> None:
     print("----TRAIN----")
     start = time()
     hyperparams = read_hyperparams()
@@ -87,7 +87,6 @@ def train(env: gym.Env, global_only=False):
                            min_examples_to_refine=hyperparams['min_examples_to_refine'],
                            req_num_to_create_init=hyperparams['req_num_to_create_init'])
 
-    option_without_init_classifier: Optional[Option] = None
     if not global_only:
         goal_option = Option("goal", budget=hyperparams['budget'], env=env, parent_option=None,
                              min_examples_to_refine=hyperparams['min_examples_to_refine'],
@@ -165,8 +164,8 @@ def train(env: gym.Env, global_only=False):
     os.makedirs("./saved_trainings", exist_ok=True)
     os.makedirs("./plots", exist_ok=True)
 
-    all_rewards = np.array(all_rewards)
-    smoothed_all_rewards = np.mean(all_rewards.reshape(-1, 10), axis=1)
+    all_rewards_ = np.array(all_rewards)
+    smoothed_all_rewards = np.mean(all_rewards_.reshape(-1, 10), axis=1)
 
     plt.plot(smoothed_all_rewards)
     plt.title(f"budget: {hyperparams['budget']}")
@@ -185,7 +184,7 @@ def train(env: gym.Env, global_only=False):
     # following part is to visualize the init and termination sets
 
 
-def get_args():
+def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='options')
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--dynamic_goal', default=False, action='store_true')
