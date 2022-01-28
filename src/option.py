@@ -167,11 +167,11 @@ class Option:
         print(f"option {self.name}: init classifier refined")
 
     def freeze(self) -> None:
-        self.successful_observations_to_create_init_classifier = []
-        self.good_examples_to_refine = []
-        self.bad_examples_to_refine = []
-        self.env = None
-        self.agent.rb = None
-        self.agent.compute_reward_func = None
-        self.init_classifier.env_termination_checker = None
-        self.termination_classifier.env_termination_checker = None
+        del self.successful_observations_to_create_init_classifier
+        del self.good_examples_to_refine
+        del self.bad_examples_to_refine
+        del self.env
+        del self.agent.rb
+        del self.agent.compute_reward_func
+        del self.init_classifier.env_termination_checker
+        del self.termination_classifier.env_termination_checker
