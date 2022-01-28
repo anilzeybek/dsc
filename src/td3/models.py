@@ -1,3 +1,4 @@
+from typing import Tuple
 from torch import nn
 import torch
 from torch.nn import functional as F
@@ -5,7 +6,7 @@ from torch.nn import functional as F
 
 class Actor(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, hidden_1=256, hidden_2=256,
-                 max_action=1):
+                 max_action=1) -> None:
         super(Actor, self).__init__()
 
         self.obs_dim = obs_dim
@@ -19,7 +20,7 @@ class Actor(nn.Module):
         self.fc2 = nn.Linear(self.hidden_1, self.hidden_2)
         self.output = nn.Linear(self.hidden_2, self.action_dim)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         output = torch.tanh(self.output(x)) * self.max_action
@@ -28,7 +29,7 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, hidden_1=256, hidden_2=256):
+    def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, hidden_1=256, hidden_2=256) -> None:
         super(Critic, self).__init__()
 
         self.obs_dim = obs_dim
@@ -45,7 +46,7 @@ class Critic(nn.Module):
         self.fc4 = nn.Linear(self.hidden_1, self.hidden_2)
         self.output2 = nn.Linear(self.hidden_2, 1)
 
-    def forward(self, obs: torch.Tensor, action: torch.Tensor):
+    def forward(self, obs: torch.Tensor, action: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         obs_action = torch.cat([obs, action], dim=-1)
 
         q1 = F.relu(self.fc1(obs_action))

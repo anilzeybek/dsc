@@ -33,7 +33,7 @@ class MetaDQNAgent:
         self.t_step = 0
         self.learn_count = 0
 
-    def add_option(self):
+    def add_option(self) -> None:
         self.action_dim += 1
         self.Q_network.change_last_layer(self.action_dim)
         self.target_network = deepcopy(self.Q_network)
@@ -44,7 +44,7 @@ class MetaDQNAgent:
             hyperparams = json.load(file)
             return hyperparams
 
-    def act(self, obs, option_repertoire: List[Option], train_mode=True):
+    def act(self, obs: np.ndarray, option_repertoire: List[Option], train_mode=True) -> int:
         selectable_indexes = []
         for i, o in enumerate(option_repertoire):
             if o.init_classifier.check(obs):
@@ -66,7 +66,7 @@ class MetaDQNAgent:
 
         return selected_index
 
-    def step(self, obs, action, reward_list, next_obs, done) -> None:
+    def step(self, obs: np.ndarray, action: int, reward_list: List[float], next_obs: np.ndarray, done: bool) -> None:
         discounted_reward = 0
         for i, reward in enumerate(reward_list):
             discounted_reward += (self.hyperparams['gamma'] ** (i + 1)) * reward
