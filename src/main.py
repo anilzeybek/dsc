@@ -173,7 +173,6 @@ def train(env: gym.Env, global_only=False) -> None:
     plt.ylabel("reward")
     plt.savefig("plots/plot.png")
 
-    # TODO: check if option_repertoire saved successfully
     for o in option_repertoire:
         o.freeze()
 

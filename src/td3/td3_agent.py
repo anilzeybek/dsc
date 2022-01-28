@@ -113,7 +113,6 @@ class TD3Agent:
 
         q_current1, q_current2 = self.critic(inputs_, actions_)
         with torch.no_grad():
-            # TODO: check if noise hyperparams good, make action_bounds accurate!!!!
             noise = (
                 torch.randn_like(actions_) * self.hyperparams['policy_noise']
             ).clamp(-self.hyperparams['noise_clip'], self.hyperparams['noise_clip'])
