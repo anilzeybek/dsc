@@ -10,7 +10,7 @@ from cpprb import ReplayBuffer
 import torch.nn.functional as F
 
 
-class DDPGAgent:
+class TD3Agent:
     def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, action_bounds: List[float],
                  compute_reward_func: Callable[[np.ndarray, np.ndarray, Any], np.ndarray]) -> None:
         self.obs_dim = obs_dim
@@ -40,6 +40,7 @@ class DDPGAgent:
             "goal": {"shape": goal_dim},
         })
         self.store_count = 0
+        self.total_it = 0
 
     @staticmethod
     def _read_hyperparams() -> Dict[str, Any]:
@@ -96,6 +97,7 @@ class DDPGAgent:
             t_params.data.copy_(tau * e_params.data + (1 - tau) * t_params.data)
 
     def train(self) -> None:
+        self.total_it += 1
         sample = self.rb.sample(self.hyperparams['batch_size'])
 
         inputs = np.concatenate([sample['obs'], sample['goal']], axis=1)
@@ -103,26 +105,34 @@ class DDPGAgent:
         dones = sample['reward'] + 1
 
         inputs_ = torch.Tensor(inputs)
+        actions_ = torch.Tensor(sample['action'])
         rewards_ = torch.Tensor(sample['reward'])
         next_inputs_ = torch.Tensor(next_inputs)
-        actions_ = torch.Tensor(sample['action'])
         dones_ = torch.Tensor(dones).long()
 
-        q_current = self.critic(inputs_, actions_)
+        q_current1, q_current2 = self.critic(inputs_, actions_)
         with torch.no_grad():
-            q_target_next = self.critic_target(next_inputs_, self.actor_target(next_inputs_))
+            # TODO: check if noise hyperparams good, extract max_action
+            noise = (torch.randn_like(actions_) * self.hyperparams['policy_noise']).clamp(-self.hyperparams['noise_clip'], self.hyperparams['noise_clip'])
+            next_actions = (self.actor_target(next_inputs_) + noise).clamp(-self.max_action, self.max_action)
+
+            q_target_next = self.critic_target(next_inputs_, next_actions)
             q_target = rewards_ + self.hyperparams['gamma'] * q_target_next * (1 - dones_)
 
-        critic_loss = F.mse_loss(q_target, q_current)
-        actor_loss = -self.critic(inputs_, self.actor(inputs_)).mean()
-
-        self.actor_optimizer.zero_grad()
-        actor_loss.backward()
-        self.actor_optimizer.step()
+        critic_loss = F.mse_loss(q_current1, q_target) + F.mse_loss(q_current2, q_target)
 
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
+
+        if self.total_it % self.hyperparams['policy_freq'] == 0:
+            actor_loss = -self.critic(inputs_, self.actor(inputs_))[0].mean()
+
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
+
+            self.update_networks()
 
     def load_global_weights(self, global_agent_actor: Actor, global_agent_critic: Critic) -> None:
         self.actor.load_state_dict(global_agent_actor.state_dict())

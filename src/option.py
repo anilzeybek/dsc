@@ -2,7 +2,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Dict, Tuple, List, Optional
 import numpy as np
-from ddpg.ddpg_agent import DDPGAgent
+from td3.td3_agent import TD3Agent
 from classifier import Classifier
 import gym
 
@@ -20,7 +20,7 @@ class Option:
         if self.name == "global" or self.name == "goal":
             assert parent_option is None, "global and goal options cant have parent option"
 
-        self.agent = DDPGAgent(env.observation_space["observation"].shape[0], env.action_space.shape[0],
+        self.agent = TD3Agent(env.observation_space["observation"].shape[0], env.action_space.shape[0],
                                env.observation_space["desired_goal"].shape[0],
                                [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
 
@@ -134,7 +134,6 @@ class Option:
             for _ in range(self.budget):
                 self.agent.train()
 
-            self.agent.update_networks()
             if self.name != "global":
                 if goal_achieved:
                     self.good_examples_to_refine.append(starting_obs)
