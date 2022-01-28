@@ -11,7 +11,7 @@ import torch.nn.functional as F
 
 
 class TD3Agent:
-    def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, action_bounds: List[float],
+    def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, action_bounds: Dict[str, np.ndarray],
                  compute_reward_func: Callable[[np.ndarray, np.ndarray, Any], np.ndarray]) -> None:
         self.obs_dim = obs_dim
         self.action_dim = action_dim
@@ -23,7 +23,7 @@ class TD3Agent:
 
         self.actor = Actor(self.obs_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                            hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'],
-                           action_bounds=self.action_bounds)
+                           max_action=max(action_bounds['high']))
         self.critic = Critic(self.obs_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                              hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'])
         self.actor_target = deepcopy(self.actor)
@@ -58,13 +58,14 @@ class TD3Agent:
             action = self.actor(x)[0].numpy()
 
         if train_mode:
-            action += self.action_bounds[1] / 5 * np.random.randn(self.action_dim)
-            action = np.clip(action, self.action_bounds[0], self.action_bounds[1])
+            action += max(self.action_bounds['high']) / 5 * np.random.randn(self.action_dim)
+            action = np.clip(action, self.action_bounds['low'], self.action_bounds['high'])
 
-            random_actions = np.random.uniform(low=self.action_bounds[0], high=self.action_bounds[1],
+            random_actions = np.random.uniform(low=self.action_bounds['low'], high=self.action_bounds['high'],
                                                size=self.action_dim)
             action += np.random.binomial(1, 0.3, 1)[0] * (random_actions - action)
 
+        action = np.clip(action, self.action_bounds['low'], self.action_bounds['high'])
         return action
 
     def store(self, episode_dict: Dict[str, List[np.ndarray]]) -> None:
@@ -112,11 +113,14 @@ class TD3Agent:
 
         q_current1, q_current2 = self.critic(inputs_, actions_)
         with torch.no_grad():
-            # TODO: check if noise hyperparams good, extract max_action
-            noise = (torch.randn_like(actions_) * self.hyperparams['policy_noise']).clamp(-self.hyperparams['noise_clip'], self.hyperparams['noise_clip'])
-            next_actions = (self.actor_target(next_inputs_) + noise).clamp(-self.max_action, self.max_action)
+            # TODO: check if noise hyperparams good, make action_bounds accurate!!!!
+            noise = (torch.randn_like(actions_) * self.hyperparams['policy_noise']
+                     ).clamp(-self.hyperparams['noise_clip'], self.hyperparams['noise_clip'])
+            next_actions = (self.actor_target(
+                next_inputs_) + noise).clamp(torch.from_numpy(self.action_bounds['low']), torch.from_numpy(self.action_bounds['high']))
 
-            q_target_next = self.critic_target(next_inputs_, next_actions)
+            q1_target_next, q2_target_next = self.critic_target(next_inputs_, next_actions)
+            q_target_next = torch.min(q1_target_next, q2_target_next)
             q_target = rewards_ + self.hyperparams['gamma'] * q_target_next * (1 - dones_)
 
         critic_loss = F.mse_loss(q_current1, q_target) + F.mse_loss(q_current2, q_target)

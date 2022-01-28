@@ -5,7 +5,7 @@ from torch.nn import functional as F
 
 class Actor(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, hidden_1=256, hidden_2=256,
-                 action_bounds=(-1, 1)):
+                 max_action=1):
         super(Actor, self).__init__()
 
         self.obs_dim = obs_dim
@@ -13,7 +13,7 @@ class Actor(nn.Module):
         self.goal_dim = goal_dim
         self.hidden_1 = hidden_1
         self.hidden_2 = hidden_2
-        self.action_bounds = torch.Tensor(action_bounds)
+        self.max_action = max_action
 
         self.fc1 = nn.Linear(self.obs_dim + self.goal_dim, self.hidden_1)
         self.fc2 = nn.Linear(self.hidden_1, self.hidden_2)
@@ -22,7 +22,7 @@ class Actor(nn.Module):
     def forward(self, x: torch.Tensor):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        output = torch.tanh(self.output(x)) * self.action_bounds[1]
+        output = torch.tanh(self.output(x)) * self.max_action
 
         return output
 

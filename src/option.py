@@ -21,8 +21,8 @@ class Option:
             assert parent_option is None, "global and goal options cant have parent option"
 
         self.agent = TD3Agent(env.observation_space["observation"].shape[0], env.action_space.shape[0],
-                               env.observation_space["desired_goal"].shape[0],
-                               [env.action_space.low[0], env.action_space.high[0]], env.compute_reward)
+                              env.observation_space["desired_goal"].shape[0],
+                              {"low": env.action_space.low, "high": env.action_space.high}, env.compute_reward)
 
         if parent_option:
             assert self.name != "global" or self.name != "goal"
@@ -89,13 +89,6 @@ class Option:
         next_env_dict = {}
         while t < self.budget:
             action = self.agent.act(obs, desired_goal, train_mode=train_mode)
-            # TODO: following makes action inside boundaries, make it a separate function
-            for i in range(len(self.env.action_space.low)):
-                if self.env.action_space.low[i] > action[i]:
-                    action[i] = self.env.action_space.low[i]
-                elif self.env.action_space.high[i] < action[i]:
-                    action[i] = self.env.action_space.high[i]
-
             assert self.env.action_space.contains(action)
 
             next_env_dict, reward, done, _ = self.env.step(action)
