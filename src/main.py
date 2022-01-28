@@ -29,7 +29,7 @@ def is_initial_obs_covered(initial_obs: np.ndarray, option_repertoire: List[Opti
     return False
 
 
-def test(env: gym.Env, global_only=False, dynamic_goal=False) -> None:
+def test(env: gym.Env, dynamic_goal=False) -> None:
     print("----TEST----")
 
     with open(f"./saved_trainings/options.pickle", 'rb') as f:
@@ -45,12 +45,12 @@ def test(env: gym.Env, global_only=False, dynamic_goal=False) -> None:
     agent_over_options.load()
 
     while True:
-        evaluate(env, agent_over_options, option_repertoire, render=True, global_only=global_only)
+        evaluate(env, agent_over_options, option_repertoire, render=True)
         if dynamic_goal:
             env.change_goal()
 
 
-def evaluate(env: gym.Env, agent_over_options: MetaDQNAgent, option_repertoire: List[Option], render=False, global_only=False) -> None:
+def evaluate(env: gym.Env, agent_over_options: MetaDQNAgent, option_repertoire: List[Option], render=False) -> None:
     print("\n---EVALUATING:")
 
     env_dict = env.reset()
@@ -60,15 +60,15 @@ def evaluate(env: gym.Env, agent_over_options: MetaDQNAgent, option_repertoire: 
     last_was_global = False
     while not done:
         option_index = agent_over_options.act(env_dict['observation'], option_repertoire, train_mode=False)
-        if global_only:
-            option_index = 0
 
         if not (last_was_global and option_repertoire[option_index].name == "global"):
             print(option_repertoire[option_index].name)
 
         last_was_global = option_repertoire[option_index].name == "global"
-        next_env_dict, reward_list, done = option_repertoire[option_index].execute(env_dict, render=render,
-                                                                                   train_mode=False)
+        next_env_dict, reward_list, done = option_repertoire[option_index].execute(
+            env_dict, render=render, train_mode=False
+        )
+
         total_reward += sum(reward_list)
         env_dict = next_env_dict
 
@@ -205,7 +205,7 @@ def main() -> None:
     env.seed(args.seed)
 
     if args.test:
-        test(env, args.global_only, args.dynamic_goal)
+        test(env, args.dynamic_goal)
     else:
         train(env, args.global_only)
 

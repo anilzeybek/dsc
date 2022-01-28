@@ -127,14 +127,13 @@ class Option:
             for _ in range(self.budget):
                 self.agent.train()
 
-            if self.name != "global":
+            if self.name != "global" and not self.init_classifier_refined:
                 if goal_achieved:
                     self.good_examples_to_refine.append(starting_obs)
                 else:
                     self.bad_examples_to_refine.append(starting_obs)
 
-                if not self.init_classifier_refined and \
-                        len(self.good_examples_to_refine) >= self.min_examples_to_refine and \
+                if len(self.good_examples_to_refine) >= self.min_examples_to_refine and \
                         len(self.bad_examples_to_refine) >= self.min_examples_to_refine:
                     self.refine_init_classifier()
 
