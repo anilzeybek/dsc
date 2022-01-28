@@ -114,10 +114,13 @@ class TD3Agent:
         q_current1, q_current2 = self.critic(inputs_, actions_)
         with torch.no_grad():
             # TODO: check if noise hyperparams good, make action_bounds accurate!!!!
-            noise = (torch.randn_like(actions_) * self.hyperparams['policy_noise']
-                     ).clamp(-self.hyperparams['noise_clip'], self.hyperparams['noise_clip'])
-            next_actions = (self.actor_target(
-                next_inputs_) + noise).clamp(torch.from_numpy(self.action_bounds['low']), torch.from_numpy(self.action_bounds['high']))
+            noise = (
+                torch.randn_like(actions_) * self.hyperparams['policy_noise']
+            ).clamp(-self.hyperparams['noise_clip'], self.hyperparams['noise_clip'])
+
+            next_actions = (
+                self.actor_target(next_inputs_) + noise
+            ).clamp(torch.from_numpy(self.action_bounds['low']), torch.from_numpy(self.action_bounds['high']))
 
             q1_target_next, q2_target_next = self.critic_target(next_inputs_, next_actions)
             q_target_next = torch.min(q1_target_next, q2_target_next)

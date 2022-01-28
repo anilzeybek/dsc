@@ -173,6 +173,7 @@ def train(env: gym.Env, global_only=False) -> None:
     plt.ylabel("reward")
     plt.savefig("plots/plot.png")
 
+    # TODO: check if option_repertoire saved successfully
     for o in option_repertoire:
         o.freeze()
 
@@ -189,7 +190,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--dynamic_goal', default=False, action='store_true')
     parser.add_argument('--global_only', default=False, action='store_true')
-    parser.add_argument('--seed', type=int, default=22)
+    parser.add_argument('--seed', type=int, default=11)
 
     args = parser.parse_args()
     return args
