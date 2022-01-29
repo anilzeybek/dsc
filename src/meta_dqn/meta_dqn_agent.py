@@ -92,6 +92,7 @@ class MetaDQNAgent:
         next_observations = torch.Tensor(sample['next_obs'])
         lengths = torch.Tensor(sample['length']).long()
         dones = torch.Tensor(sample['done']).long()
+        # TODO: done might be misleading, decide whether to keep it or not
 
         q_current = self.Q_network(observations).gather(1, actions)
         with torch.no_grad():

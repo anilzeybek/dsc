@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 import numpy as np
 import random
@@ -105,6 +106,7 @@ def train(env: gym.Env, global_only=False) -> None:
         obs_history = []
         this_episode_used = False
         episode_reward = 0
+        last_executed_option_name = ""
 
         while not done:
             option_index = agent_over_options.act(env_dict['observation'], option_repertoire)
@@ -116,6 +118,12 @@ def train(env: gym.Env, global_only=False) -> None:
             agent_over_options.step(env_dict['observation'], option_index, reward_list,
                                     next_env_dict['observation'], done)
 
+            if (last_executed_option_name == "global" and option_repertoire[option_index].name != "global") or done:
+                # global can't store episode dict its inside because it doesn't know when it terminated, so stored here
+                option_repertoire[0].agent.store(option_repertoire[0].globals_episode_dict)
+                option_repertoire[0].globals_episode_dict = defaultdict(lambda: [])
+
+            last_executed_option_name = option_repertoire[option_index].name
             env_dict = next_env_dict
 
             if not global_only and \
@@ -181,15 +189,13 @@ def train(env: gym.Env, global_only=False) -> None:
 
     agent_over_options.save()
 
-    # following part is to visualize the init and termination sets
-
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='options')
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--dynamic_goal', default=False, action='store_true')
     parser.add_argument('--global_only', default=False, action='store_true')
-    parser.add_argument('--seed', type=int, default=11)
+    parser.add_argument('--seed', type=int, default=0)
 
     args = parser.parse_args()
     return args

@@ -78,15 +78,18 @@ class TD3Agent:
             next_obs = episode_dict['next_obs'][t]
             goal = episode_dict['desired_goal'][t]
             next_achieved = episode_dict['next_achieved_goal'][t]
+            # TODO: why dont we use achieved_goal here?
 
             self.rb.add(obs=obs, action=action, reward=reward, next_obs=next_obs, goal=goal)
             self.store_count += 1
-            for _ in range(self.hyperparams['k_future']):
-                future_idx = np.random.randint(low=t, high=episode_len)
-                new_goal = episode_dict['next_achieved_goal'][future_idx]
-                new_reward = self.compute_reward_func(next_achieved, new_goal, None)[0]
-                self.rb.add(obs=obs, action=action, reward=new_reward, next_obs=next_obs, goal=new_goal)
-                self.store_count += 1
+
+            if episode_len > 1:
+                for _ in range(self.hyperparams['k_future']):
+                    future_idx = np.random.randint(low=t, high=episode_len)
+                    new_goal = episode_dict['next_achieved_goal'][future_idx]
+                    new_reward = self.compute_reward_func(next_achieved, new_goal, None)[0]
+                    self.rb.add(obs=obs, action=action, reward=new_reward, next_obs=next_obs, goal=new_goal)
+                    self.store_count += 1
 
         if self.store_count >= 250:
             self.rb.on_episode_end()
@@ -98,8 +101,13 @@ class TD3Agent:
             t_params.data.copy_(tau * e_params.data + (1 - tau) * t_params.data)
 
     def train(self) -> None:
+        try:
+            sample = self.rb.sample(self.hyperparams['batch_size'])
+        except ValueError:
+            # means not enough sample
+            return
+
         self.total_it += 1
-        sample = self.rb.sample(self.hyperparams['batch_size'])
 
         inputs = np.concatenate([sample['obs'], sample['goal']], axis=1)
         next_inputs = np.concatenate([sample['next_obs'], sample['goal']], axis=1)

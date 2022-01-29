@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections import defaultdict
 from copy import deepcopy
 from typing import Dict, Tuple, List, Optional
 import numpy as np
@@ -54,6 +55,7 @@ class Option:
             self.init_classifier_created = True
             self.init_classifier_refined = True
 
+        self.globals_episode_dict = defaultdict(lambda: [])
         self.successful_observations_to_create_init_classifier = []
         self.good_examples_to_refine = []
         self.bad_examples_to_refine = []
@@ -68,7 +70,7 @@ class Option:
         starting_obs = env_dict["observation"]
         t = 0
 
-        episode_dict = {
+        exec_dict = {
             "obs": [],
             "action": [],
             "reward": [],
@@ -105,13 +107,13 @@ class Option:
                 # if goal_achieved becomes true once, it should stay true
                 goal_achieved = self.termination_classifier.check(next_obs)
 
-            episode_dict["obs"].append(obs)
-            episode_dict["action"].append(action)
-            episode_dict["reward"].append(reward)
-            episode_dict["achieved_goal"].append(achieved_goal)
-            episode_dict["desired_goal"].append(desired_goal)
-            episode_dict["next_obs"].append(next_obs)
-            episode_dict["next_achieved_goal"].append(next_achieved_goal)
+            exec_dict["obs"].append(obs)
+            exec_dict["action"].append(action)
+            exec_dict["reward"].append(reward)
+            exec_dict["achieved_goal"].append(achieved_goal)
+            exec_dict["desired_goal"].append(desired_goal)
+            exec_dict["next_obs"].append(next_obs)
+            exec_dict["next_achieved_goal"].append(next_achieved_goal)
 
             obs = next_obs
             achieved_goal = next_achieved_goal
@@ -123,7 +125,13 @@ class Option:
                 break
 
         if train_mode:
-            self.agent.store(episode_dict)
+            if self.name == "global":
+                # global's episode_dict store to rb from main, otherwise it is not 'episode'
+                for key, value in exec_dict.items():
+                    self.globals_episode_dict[key] += value
+            else:
+                self.agent.store(exec_dict)
+
             for _ in range(self.budget):
                 self.agent.train()
 
@@ -174,3 +182,4 @@ class Option:
         del self.agent.compute_reward_func
         del self.init_classifier.env_termination_checker
         del self.termination_classifier.env_termination_checker
+        del self.globals_episode_dict
