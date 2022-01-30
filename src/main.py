@@ -30,7 +30,7 @@ def is_initial_obs_covered(initial_obs: np.ndarray, option_repertoire: List[Opti
     return False
 
 
-def test(env: gym.Env, dynamic_goal=False) -> None:
+def test(env: gym.Env) -> None:
     print("----TEST----")
 
     with open(f"./saved_trainings/options.pickle", 'rb') as f:
@@ -47,8 +47,6 @@ def test(env: gym.Env, dynamic_goal=False) -> None:
 
     while True:
         evaluate(env, agent_over_options, option_repertoire, render=True)
-        if dynamic_goal:
-            env.change_goal()
 
 
 def evaluate(env: gym.Env, agent_over_options: MetaDQNAgent, option_repertoire: List[Option], render=False) -> None:
@@ -210,8 +208,11 @@ def main() -> None:
     torch.manual_seed(args.seed)
     env.seed(args.seed)
 
+    if args.dynamic_goal:
+        env.dynamic_goal()
+
     if args.test:
-        test(env, args.dynamic_goal)
+        test(env)
     else:
         train(env, args.global_only)
 
