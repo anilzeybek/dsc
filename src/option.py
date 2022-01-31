@@ -74,13 +74,11 @@ class Option:
             "obs": [],
             "action": [],
             "reward": [],
-            "achieved_goal": [],
             "desired_goal": [],
             "next_obs": [],
             "next_achieved_goal": []
         }
         obs = env_dict["observation"]
-        achieved_goal = env_dict["achieved_goal"]
         desired_goal = env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else \
             self.env.obs_to_achieved(self.termination_classifier.sample())
 
@@ -99,8 +97,7 @@ class Option:
 
             next_obs = next_env_dict["observation"]
             next_achieved_goal = next_env_dict["achieved_goal"]
-            next_desired_goal = next_env_dict[
-                "desired_goal"] if self.name == "global" or self.name == "goal" else desired_goal
+            next_desired_goal = next_env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else desired_goal
 
             reward_list.append(reward)
             if not goal_achieved:
@@ -110,13 +107,11 @@ class Option:
             exec_dict["obs"].append(obs)
             exec_dict["action"].append(action)
             exec_dict["reward"].append(reward)
-            exec_dict["achieved_goal"].append(achieved_goal)
             exec_dict["desired_goal"].append(desired_goal)
             exec_dict["next_obs"].append(next_obs)
             exec_dict["next_achieved_goal"].append(next_achieved_goal)
 
             obs = next_obs
-            achieved_goal = next_achieved_goal
             desired_goal = next_desired_goal
 
             t += 1

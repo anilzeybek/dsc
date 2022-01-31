@@ -203,7 +203,7 @@ mujoco-py = ">=1.5"
 type = "git"
 url = "https://github.com/anilzeybek/mujoco-maze.git"
 reference = "main"
-resolved_reference = "66de5ec69a8273b623a9bc5a9884b020a1bf60af"
+resolved_reference = "0f4d1eb540e43ff9667daa3ffdc3436ae1af1a0c"
 
 [[package]]
 name = "mujoco-py"

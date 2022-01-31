@@ -78,7 +78,6 @@ class TD3Agent:
             next_obs = episode_dict['next_obs'][t]
             goal = episode_dict['desired_goal'][t]
             next_achieved = episode_dict['next_achieved_goal'][t]
-            # TODO: why dont we use achieved_goal here?
 
             self.rb.add(obs=obs, action=action, reward=reward, next_obs=next_obs, goal=goal)
             self.store_count += 1
