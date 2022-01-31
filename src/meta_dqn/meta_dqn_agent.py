@@ -71,8 +71,10 @@ class MetaDQNAgent:
         for i, reward in enumerate(reward_list):
             discounted_reward += (self.hyperparams['gamma'] ** (i + 1)) * reward
 
+        # done is true if goal reached or 1000 steps, so storing it as rewards + 1
+        # is better because it gives real termination (all actions except goal reacher is -1)
         self.rb.add(obs=obs, action=action, discounted_reward=discounted_reward,
-                    next_obs=next_obs, done=done, length=len(reward_list))
+                    next_obs=next_obs, done=[r+1 for r in reward_list], length=len(reward_list))
 
         self.t_step = (self.t_step + 1) % self.hyperparams['update_every']
         if self.t_step == 0:
@@ -92,7 +94,6 @@ class MetaDQNAgent:
         next_observations = torch.Tensor(sample['next_obs'])
         lengths = torch.Tensor(sample['length']).long()
         dones = torch.Tensor(sample['done']).long()
-        # TODO: done might be misleading, decide whether to keep it or not
 
         q_current = self.Q_network(observations).gather(1, actions)
         with torch.no_grad():
