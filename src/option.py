@@ -99,12 +99,12 @@ class Option:
             next_achieved_goal = next_env_dict["achieved_goal"]
             next_desired_goal = next_env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else desired_goal
 
+            internal_reward = self.env.compute_reward(next_achieved_goal, desired_goal, None)[0]
             reward_list.append(reward)
 
             exec_dict["obs"].append(obs)
             exec_dict["action"].append(action)
-            # TODO: if we are not global or goal, reward is misleading for this option?
-            exec_dict["reward"].append(reward)
+            exec_dict["reward"].append(internal_reward)
             exec_dict["desired_goal"].append(desired_goal)
             exec_dict["next_obs"].append(next_obs)
             exec_dict["next_achieved_goal"].append(next_achieved_goal)
@@ -114,7 +114,7 @@ class Option:
 
             t += 1
 
-            goal_achieved = self.termination_classifier.check(obs)
+            goal_achieved = (internal_reward == 0)
             if goal_achieved or done:
                 break
 

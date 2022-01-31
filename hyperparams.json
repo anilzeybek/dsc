@@ -3,7 +3,7 @@
     "req_num_to_create_init": 30,
     "num_steps_before": 20,
     "min_examples_to_refine": 60,
-    "max_episodes": 300,
+    "max_episodes": 400,
     "agent_over_options": {
         "lr": 1e-3,
         "buffer_size": 10000,
