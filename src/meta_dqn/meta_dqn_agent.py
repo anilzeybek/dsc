@@ -35,7 +35,7 @@ class MetaDQNAgent:
 
     def add_option(self) -> None:
         self.action_dim += 1
-        self.Q_network.change_last_layer(self.action_dim)
+        self.Q_network.add_node_to_output(self.action_dim)
         self.target_network = deepcopy(self.Q_network)
 
     @staticmethod
@@ -49,10 +49,6 @@ class MetaDQNAgent:
         for i, o in enumerate(option_repertoire):
             if o.init_classifier.check(obs):
                 selectable_indexes.append(i)
-
-        # TODO: following is not feasible (removing the global from selectable) for optimistic init of options
-        if len(selectable_indexes) > 1:
-            selectable_indexes = selectable_indexes[1:]
 
         if np.random.rand() < self.eps and train_mode:
             selected_index = np.random.choice(selectable_indexes)
@@ -71,10 +67,8 @@ class MetaDQNAgent:
         for i, reward in enumerate(reward_list):
             discounted_reward += (self.hyperparams['gamma'] ** (i + 1)) * reward
 
-        # done is true if goal reached or 1000 steps, so storing it as rewards + 1
-        # is better because it gives real termination (all actions except goal reacher is -1)
         self.rb.add(obs=obs, action=action, discounted_reward=discounted_reward,
-                    next_obs=next_obs, done=[r+1 for r in reward_list], length=len(reward_list))
+                    next_obs=next_obs, done=reward_list[-1]+1, length=len(reward_list))
 
         self.t_step = (self.t_step + 1) % self.hyperparams['update_every']
         if self.t_step == 0:
@@ -95,6 +89,7 @@ class MetaDQNAgent:
         lengths = torch.Tensor(sample['length']).long()
         dones = torch.Tensor(sample['done']).long()
 
+        # TODO: why treats non-global options as they were sooo bad?
         q_current = self.Q_network(observations).gather(1, actions)
         with torch.no_grad():
             a = self.Q_network(next_observations).argmax(1).unsqueeze(1)
