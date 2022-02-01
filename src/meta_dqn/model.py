@@ -17,7 +17,14 @@ class QNetwork(nn.Module):
         self.fc3 = nn.Linear(self.hidden_2, self.action_dim)
 
     def change_last_layer(self, new_dim: int) -> None:
+        last_layer_weight = self.state_dict()['fc3.weight']
+        last_layer_bias = self.state_dict()['fc3.bias']
+
         self.fc3 = nn.Linear(self.hidden_2, new_dim)
+
+        self.fc3.weight.data[:-1] = last_layer_weight
+        self.fc3.bias.data[:-1] = last_layer_bias
+        print("asdasd")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = F.relu(self.fc1(x))

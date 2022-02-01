@@ -69,7 +69,6 @@ class TD3Agent:
         return action
 
     def store(self, episode_dict: Dict[str, List[np.ndarray]]) -> None:
-        # TODO: slow, fix it
         episode_len = len(episode_dict['obs'])
         for t in range(episode_len):
             obs = episode_dict['obs'][t]
