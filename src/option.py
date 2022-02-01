@@ -99,8 +99,9 @@ class Option:
             next_achieved_goal = next_env_dict["achieved_goal"]
             next_desired_goal = next_env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else desired_goal
 
-            internal_reward = self.env.compute_reward(next_achieved_goal, desired_goal, None)[0]
             reward_list.append(reward)
+            goal_achieved = self.termination_classifier.check(next_obs)
+            internal_reward = 0 if goal_achieved else -1
 
             exec_dict["obs"].append(obs)
             exec_dict["action"].append(action)
@@ -113,8 +114,6 @@ class Option:
             desired_goal = next_desired_goal
 
             t += 1
-
-            goal_achieved = (internal_reward == 0)
             if goal_achieved or done:
                 break
 

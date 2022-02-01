@@ -1,5 +1,5 @@
 {
-    "budget": 40,
+    "budget": 80,
     "req_num_to_create_init": 30,
     "num_steps_before": 20,
     "min_examples_to_refine": 60,
