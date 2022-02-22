@@ -90,11 +90,6 @@ class TD3Agent:
             self.rb.on_episode_end()
             self.store_count = 0
 
-    @staticmethod
-    def soft_update_networks(local_model, target_model, tau=0.05):
-        for t_params, e_params in zip(target_model.parameters(), local_model.parameters()):
-            t_params.data.copy_(tau * e_params.data + (1 - tau) * t_params.data)
-
     def train(self):
         try:
             sample = self.rb.sample(self.hyperparams['batch_size'])
@@ -141,7 +136,13 @@ class TD3Agent:
             actor_loss.backward()
             self.actor_optimizer.step()
 
-            self.update_networks()
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.hyperparams['tau'] * param.data +
+                                        (1 - self.hyperparams['tau']) * target_param.data)
+
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.hyperparams['tau'] * param.data +
+                                        (1 - self.hyperparams['tau']) * target_param.data)
 
     def load_global_weights(self, global_agent_actor, global_agent_critic):
         self.actor.load_state_dict(global_agent_actor.state_dict())
@@ -149,7 +150,3 @@ class TD3Agent:
 
         self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
-
-    def update_networks(self):
-        self.soft_update_networks(self.actor, self.actor_target, self.hyperparams['tau'])
-        self.soft_update_networks(self.critic, self.critic_target, self.hyperparams['tau'])
