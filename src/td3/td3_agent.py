@@ -16,7 +16,7 @@ class TD3Agent:
         self.action_bounds = action_bounds
         self.compute_reward_func = compute_reward_func
 
-        self.hyperparams = self._read_hyperparams()['local_agent_continuous']
+        self.hyperparams = self._read_hyperparams()['local_agent_td3']
 
         self.actor = Actor(self.obs_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                            hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'],
@@ -45,7 +45,7 @@ class TD3Agent:
             hyperparams = json.load(f)
             return hyperparams
 
-    def act(self, obs: np.ndarray, goal: np.ndarray, train_mode=True) -> np.ndarray:
+    def act(self, obs, goal, train_mode=True):
         obs = np.expand_dims(obs, axis=0)
         goal = np.expand_dims(goal, axis=0)
 

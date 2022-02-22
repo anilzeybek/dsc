@@ -21,9 +21,13 @@ class Option:
         if self.name == "global" or self.name == "goal":
             assert parent_option is None, "global and goal options cant have parent option"
 
-        self.agent = TD3Agent(env.observation_space["observation"].shape[0], env.action_space.shape[0],
-                              env.observation_space["desired_goal"].shape[0],
-                              {"low": env.action_space.low, "high": env.action_space.high}, env.compute_reward)
+        self.agent = TD3Agent(
+            obs_dim=env.observation_space["observation"].shape[0],
+            action_dim=env.action_space.shape[0],
+            goal_dim=env.observation_space["desired_goal"].shape[0],
+            action_bounds={"low": env.action_space.low, "high": env.action_space.high}, 
+            compute_reward_func=env.compute_reward
+        )
 
         if parent_option:
             assert self.name != "global" or self.name != "goal"
@@ -74,11 +78,13 @@ class Option:
             "obs": [],
             "action": [],
             "reward": [],
+            "achieved_goal": [],
             "desired_goal": [],
             "next_obs": [],
             "next_achieved_goal": []
         }
         obs = env_dict["observation"]
+        achieved_goal = env_dict["achieved_goal"]
         desired_goal = env_dict["desired_goal"] if self.name == "global" or self.name == "goal" else \
             self.env.obs_to_achieved(self.termination_classifier.sample())
 
@@ -106,11 +112,13 @@ class Option:
             exec_dict["obs"].append(obs)
             exec_dict["action"].append(action)
             exec_dict["reward"].append(internal_reward)
+            exec_dict["achieved_goal"].append(achieved_goal)
             exec_dict["desired_goal"].append(desired_goal)
             exec_dict["next_obs"].append(next_obs)
             exec_dict["next_achieved_goal"].append(next_achieved_goal)
 
             obs = next_obs
+            achieved_goal = next_achieved_goal
             desired_goal = next_desired_goal
 
             t += 1
