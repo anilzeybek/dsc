@@ -1,7 +1,7 @@
 import torch
 import json
 import numpy as np
-from torch.optim import Adam
+import torch.optim as optim
 from .models import Actor, Critic
 from copy import deepcopy
 from cpprb import ReplayBuffer
@@ -21,22 +21,23 @@ class TD3Agent:
         self.actor = Actor(self.obs_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                            hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'],
                            max_action=max(action_bounds['high']))
+        self.actor_target = deepcopy(self.actor)
+
+
         self.critic = Critic(self.obs_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                              hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'])
-        self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
 
-        self.actor_optimizer = Adam(self.actor.parameters(), self.hyperparams['actor_lr'])
-        self.critic_optimizer = Adam(self.critic.parameters(), self.hyperparams['critic_lr'])
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=self.hyperparams['actor_lr'])
+        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=self.hyperparams['critic_lr'])
 
         self.rb = ReplayBuffer(self.hyperparams['buffer_size'], env_dict={
-            "obs": {"shape": obs_dim},
-            "action": {"shape": action_dim},
+            "obs": {"shape": self.obs_dim},
+            "action": {"shape": self.action_dim},
             "reward": {},
-            "next_obs": {"shape": obs_dim},
-            "goal": {"shape": goal_dim},
+            "next_obs": {"shape": self.obs_dim},
+            "goal": {"shape": self.goal_dim}
         })
-        self.store_count = 0
         self.total_it = 0
 
     @staticmethod
@@ -76,19 +77,17 @@ class TD3Agent:
             next_achieved = episode_dict['next_achieved_goal'][t]
 
             self.rb.add(obs=obs, action=action, reward=reward, next_obs=next_obs, goal=goal)
-            self.store_count += 1
 
             if episode_len > 1:
                 for _ in range(self.hyperparams['k_future']):
                     future_idx = np.random.randint(low=t, high=episode_len)
-                    new_goal = episode_dict['next_achieved_goal'][future_idx]
-                    new_reward = self.compute_reward_func(next_achieved, new_goal, None)[0]
-                    self.rb.add(obs=obs, action=action, reward=new_reward, next_obs=next_obs, goal=new_goal)
-                    self.store_count += 1
 
-        if self.store_count >= 250:
-            self.rb.on_episode_end()
-            self.store_count = 0
+                    new_goal = episode_dict['achieved_goal'][future_idx]
+                    new_reward = self.compute_reward_func(next_achieved, new_goal, None)[0]
+
+                    self.rb.add(obs=obs, action=action, reward=new_reward, next_obs=next_obs, goal=new_goal)
+
+        self.rb.on_episode_end()
 
     def train(self):
         try:
@@ -99,29 +98,29 @@ class TD3Agent:
 
         self.total_it += 1
 
-        inputs = np.concatenate([sample['obs'], sample['goal']], axis=1)
-        next_inputs = np.concatenate([sample['next_obs'], sample['goal']], axis=1)
-        dones = sample['reward'] + 1
+        input = np.concatenate([sample['obs'], sample['goal']], axis=1)
+        next_input = np.concatenate([sample['next_obs'], sample['goal']], axis=1)
+        done = sample['reward'] + 1
 
-        inputs_ = torch.Tensor(inputs)
-        actions_ = torch.Tensor(sample['action'])
-        rewards_ = torch.Tensor(sample['reward'])
-        next_inputs_ = torch.Tensor(next_inputs)
-        dones_ = torch.Tensor(dones).long()
+        input = torch.Tensor(input)
+        action = torch.Tensor(sample['action'])
+        reward = torch.Tensor(sample['reward'])
+        next_input = torch.Tensor(next_input)
+        done = torch.Tensor(done).long()
 
-        q_current1, q_current2 = self.critic(inputs_, actions_)
+        q_current1, q_current2 = self.critic(input, action)
         with torch.no_grad():
             noise = (
-                torch.randn_like(actions_) * self.hyperparams['policy_noise']
+                torch.randn_like(action) * self.hyperparams['policy_noise']
             ).clamp(-self.hyperparams['noise_clip'], self.hyperparams['noise_clip'])
 
             next_actions = (
-                self.actor_target(next_inputs_) + noise
+                self.actor_target(next_input) + noise
             ).clamp(torch.from_numpy(self.action_bounds['low']), torch.from_numpy(self.action_bounds['high']))
 
-            q1_target_next, q2_target_next = self.critic_target(next_inputs_, next_actions)
+            q1_target_next, q2_target_next = self.critic_target(next_input, next_actions)
             q_target_next = torch.min(q1_target_next, q2_target_next)
-            q_target = rewards_ + self.hyperparams['gamma'] * q_target_next * (1 - dones_)
+            q_target = reward + self.hyperparams['gamma'] * q_target_next * (1 - done)
 
         critic_loss = F.mse_loss(q_current1, q_target) + F.mse_loss(q_current2, q_target)
 
@@ -130,7 +129,7 @@ class TD3Agent:
         self.critic_optimizer.step()
 
         if self.total_it % self.hyperparams['policy_freq'] == 0:
-            actor_loss = -self.critic(inputs_, self.actor(inputs_))[0].mean()
+            actor_loss = -self.critic(input, self.actor(input))[0].mean()
 
             self.actor_optimizer.zero_grad()
             actor_loss.backward()

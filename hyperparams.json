@@ -24,7 +24,7 @@
         "noise_clip": 0.1,
         "policy_freq": 4,
         "buffer_size": 100000,
-        "batch_size": 64,
+        "batch_size": 128,
         "gamma": 0.98,
         "tau": 0.05,
         "k_future": 4,
