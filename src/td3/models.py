@@ -4,9 +4,9 @@ import torch.nn. functional as F
 
 
 class Actor(nn.Module):
-    def __init__(self, obs_dim, action_dim, goal_dim, hidden_1=256, hidden_2=256, max_action=1):
+    def __init__(self, obs_dim, action_dim, goal_dim, hidden_1=256, hidden_2=256, action_bounds_high=1):
         super(Actor, self).__init__()
-        self.max_action = max_action
+        self.action_bounds_high = torch.Tensor(action_bounds_high)
 
         self.fc1 = nn.Linear(obs_dim + goal_dim, hidden_1)
         self.fc2 = nn.Linear(hidden_1, hidden_2)
@@ -17,9 +17,7 @@ class Actor(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
 
-        output = torch.tanh(x) * self.max_action
-
-        return output
+        return torch.tanh(x) * self.action_bounds_high
 
 
 class Critic(nn.Module):

@@ -20,7 +20,7 @@ class TD3Agent:
 
         self.actor = Actor(self.obs_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                            hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'],
-                           max_action=max(action_bounds['high']))
+                           action_bounds_high=action_bounds['high'])
         self.actor_target = deepcopy(self.actor)
 
 
@@ -47,16 +47,12 @@ class TD3Agent:
             return hyperparams
 
     def act(self, obs, goal, train_mode=True):
-        obs = np.expand_dims(obs, axis=0)
-        goal = np.expand_dims(goal, axis=0)
-
         with torch.no_grad():
-            x = np.concatenate([obs, goal], axis=1)
-            x = torch.from_numpy(x).float()
-            action = self.actor(x)[0].numpy()
+            x = torch.from_numpy(np.concatenate([obs, goal])).float()
+            action = self.actor(x).numpy()
 
         if train_mode:
-            action += max(self.action_bounds['high']) / 5 * np.random.randn(self.action_dim)
+            action += self.action_bounds['high'] / 5 * np.random.randn(self.action_dim)
             action = np.clip(action, self.action_bounds['low'], self.action_bounds['high'])
 
             random_actions = np.random.uniform(low=self.action_bounds['low'], high=self.action_bounds['high'],
