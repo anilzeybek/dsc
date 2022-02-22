@@ -17,6 +17,8 @@ class TD3Agent:
         self.compute_reward_func = compute_reward_func
 
         self.hyperparams = self._read_hyperparams()['local_agent_td3']
+        self.policy_noise = torch.from_numpy(self.hyperparams['policy_noise'] * action_bounds['high'])
+        self.noise_clip = torch.from_numpy(self.hyperparams['noise_clip'] * action_bounds['high'])
 
         self.actor = Actor(self.obs_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                            hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'],
@@ -107,8 +109,8 @@ class TD3Agent:
         q_current1, q_current2 = self.critic(input, action)
         with torch.no_grad():
             noise = (
-                torch.randn_like(action) * self.hyperparams['policy_noise']
-            ).clamp(-self.hyperparams['noise_clip'], self.hyperparams['noise_clip'])
+                torch.randn_like(action) * self.policy_noise
+            ).clamp(-self.noise_clip, self.noise_clip)
 
             next_actions = (
                 self.actor_target(next_input) + noise

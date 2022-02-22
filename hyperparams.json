@@ -20,9 +20,9 @@
     "local_agent_td3": {
         "actor_lr": 1e-3,
         "critic_lr": 1e-3,
-        "policy_noise": 0.05,
-        "noise_clip": 0.1,
-        "policy_freq": 4,
+        "policy_noise": 0.2,
+        "noise_clip": 0.5,
+        "policy_freq": 2,
         "buffer_size": 100000,
         "batch_size": 128,
         "gamma": 0.98,
