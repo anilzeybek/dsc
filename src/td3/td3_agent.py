@@ -1,18 +1,15 @@
-from typing import List, Callable, Dict, Any
 import torch
 import json
 import numpy as np
 from torch.optim import Adam
 from .models import Actor, Critic
 from copy import deepcopy
-from torch import nn
 from cpprb import ReplayBuffer
 import torch.nn.functional as F
 
 
 class TD3Agent:
-    def __init__(self, obs_dim: int, action_dim: int, goal_dim: int, action_bounds: Dict[str, np.ndarray],
-                 compute_reward_func: Callable[[np.ndarray, np.ndarray, Any], np.ndarray]) -> None:
+    def __init__(self, obs_dim, action_dim, goal_dim, action_bounds, compute_reward_func):
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.goal_dim = goal_dim
@@ -43,7 +40,7 @@ class TD3Agent:
         self.total_it = 0
 
     @staticmethod
-    def _read_hyperparams() -> Dict[str, Any]:
+    def _read_hyperparams():
         with open('hyperparams.json') as f:
             hyperparams = json.load(f)
             return hyperparams
@@ -68,7 +65,7 @@ class TD3Agent:
         action = np.clip(action, self.action_bounds['low'], self.action_bounds['high'])
         return action
 
-    def store(self, episode_dict: Dict[str, List[np.ndarray]]) -> None:
+    def store(self, episode_dict):
         episode_len = len(episode_dict['obs'])
         for t in range(episode_len):
             obs = episode_dict['obs'][t]
@@ -94,11 +91,11 @@ class TD3Agent:
             self.store_count = 0
 
     @staticmethod
-    def soft_update_networks(local_model: nn.Module, target_model: nn.Module, tau=0.05) -> None:
+    def soft_update_networks(local_model, target_model, tau=0.05):
         for t_params, e_params in zip(target_model.parameters(), local_model.parameters()):
             t_params.data.copy_(tau * e_params.data + (1 - tau) * t_params.data)
 
-    def train(self) -> None:
+    def train(self):
         try:
             sample = self.rb.sample(self.hyperparams['batch_size'])
         except ValueError:
@@ -146,13 +143,13 @@ class TD3Agent:
 
             self.update_networks()
 
-    def load_global_weights(self, global_agent_actor: Actor, global_agent_critic: Critic) -> None:
+    def load_global_weights(self, global_agent_actor, global_agent_critic):
         self.actor.load_state_dict(global_agent_actor.state_dict())
         self.critic.load_state_dict(global_agent_critic.state_dict())
 
         self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
 
-    def update_networks(self) -> None:
+    def update_networks(self):
         self.soft_update_networks(self.actor, self.actor_target, self.hyperparams['tau'])
         self.soft_update_networks(self.critic, self.critic_target, self.hyperparams['tau'])
