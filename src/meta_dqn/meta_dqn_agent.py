@@ -1,5 +1,4 @@
 import json
-from typing import Any, Dict, List
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -11,7 +10,7 @@ from copy import deepcopy
 
 
 class MetaDQNAgent:
-    def __init__(self, obs_dim, action_dim) -> None:
+    def __init__(self, obs_dim, action_dim):
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.hyperparams = self._read_hyperparams()['agent_over_options']
@@ -33,18 +32,18 @@ class MetaDQNAgent:
         self.t_step = 0
         self.learn_count = 0
 
-    def add_option(self) -> None:
+    def add_option(self):
         self.action_dim += 1
         self.Q_network.add_node_to_output(self.action_dim)
         self.target_network = deepcopy(self.Q_network)
 
     @staticmethod
-    def _read_hyperparams() -> Dict[str, Any]:
+    def _read_hyperparams():
         with open('hyperparams.json') as file:
             hyperparams = json.load(file)
             return hyperparams
 
-    def act(self, obs: np.ndarray, option_repertoire: List[Option], train_mode=True) -> int:
+    def act(self, obs, option_repertoire, train_mode=True):
         selectable_indexes = []
         for i, o in enumerate(option_repertoire):
             if o.init_classifier.check(obs):
@@ -62,7 +61,7 @@ class MetaDQNAgent:
 
         return selected_index
 
-    def step(self, obs: np.ndarray, action: int, reward_list: List[float], next_obs: np.ndarray, done: bool) -> None:
+    def step(self, obs, action, reward_list, next_obs, done):
         discounted_reward = 0
         for i, reward in enumerate(reward_list):
             discounted_reward += (self.hyperparams['gamma'] ** (i + 1)) * reward
@@ -76,10 +75,10 @@ class MetaDQNAgent:
         if done:
             self._update_eps()
 
-    def _update_eps(self) -> None:
+    def _update_eps(self):
         self.eps = max(self.hyperparams['eps_end'], self.hyperparams['eps_decay'] * self.eps)
 
-    def _train(self) -> None:
+    def _train(self):
         sample = self.rb.sample(self.hyperparams['batch_size'])
 
         observations = torch.Tensor(sample['obs'])
@@ -107,9 +106,9 @@ class MetaDQNAgent:
         if self.learn_count % self.hyperparams['sync_target_every'] == 0:
             self.target_network.load_state_dict(self.Q_network.state_dict())
 
-    def save(self) -> None:
+    def save(self):
         torch.save(self.Q_network.state_dict(), "./saved_trainings/agent_over_options.pth")
 
-    def load(self) -> None:
+    def load(self):
         self.Q_network.load_state_dict(torch.load("./saved_trainings/agent_over_options.pth"))
         self.eps = 0  # since we load, it should be 0 because we are not training anymore

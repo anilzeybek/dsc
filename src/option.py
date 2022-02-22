@@ -1,17 +1,12 @@
-from __future__ import annotations
 from collections import defaultdict
 from copy import deepcopy
-from typing import Dict, Tuple, List, Optional
-import numpy as np
 from td3.td3_agent import TD3Agent
 from classifier import Classifier
-import gym
 
 
 # TODO: global bi sekilde diger option'lardan etkileniyor gibi??
 class Option:
-    def __init__(self, name: str, budget: int, env: gym.Env, parent_option: Optional[Option],
-                 min_examples_to_refine: int, req_num_to_create_init: int) -> None:
+    def __init__(self, name, budget, env, parent_option, min_examples_to_refine, req_num_to_create_init):
         self.name = name
         self.budget = budget
         self.env = env
@@ -65,9 +60,7 @@ class Option:
         self.bad_examples_to_refine = []
         print(f"option {self.name}: generated")
 
-    def execute(self, env_dict: Dict[str, np.ndarray], render=False, train_mode=True) -> \
-            Tuple[Dict[str, np.ndarray], List[float], bool]:
-
+    def execute(self, env_dict, render=False, train_mode=True):
         assert self.init_classifier_created, \
             "to execute an option, its init classifier must be at least created"
 
@@ -148,7 +141,7 @@ class Option:
 
         return next_env_dict, reward_list, done
 
-    def create_init_classifier(self, successful_observation: np.ndarray, initial_obs: np.ndarray) -> bool:
+    def create_init_classifier(self, successful_observation, initial_obs):
         # initial_obs is required because if list contains only it, it fails
 
         assert not self.init_classifier_created or not self.init_classifier_refined, \
@@ -166,7 +159,7 @@ class Option:
 
         return False
 
-    def refine_init_classifier(self) -> None:
+    def refine_init_classifier(self):
         assert self.init_classifier_created, "to refine an init classifier, it must be created"
         assert not self.init_classifier_refined, "you can't refine an already refined init classifier"
 
@@ -174,7 +167,7 @@ class Option:
         self.init_classifier_refined = True
         print(f"option {self.name}: init classifier refined")
 
-    def freeze(self) -> None:
+    def freeze(self):
         del self.successful_observations_to_create_init_classifier
         del self.good_examples_to_refine
         del self.bad_examples_to_refine

@@ -5,7 +5,6 @@ import random
 import torch
 from meta_dqn.meta_dqn_agent import MetaDQNAgent
 from option import Option
-from typing import Any, Dict, List
 import os
 import pickle
 import gym
@@ -15,13 +14,13 @@ import argparse
 import matplotlib.pyplot as plt
 
 
-def read_hyperparams() -> Dict[str, Any]:
+def read_hyperparams():
     with open('hyperparams.json') as f:
         hyperparams = json.load(f)
         return hyperparams
 
 
-def is_initial_obs_covered(initial_obs: np.ndarray, option_repertoire: List[Option]) -> bool:
+def is_initial_obs_covered(initial_obs, option_repertoire):
     for o in option_repertoire:
         if o.init_classifier.check(initial_obs):
             print("------------Initial obs covered!")
@@ -30,11 +29,11 @@ def is_initial_obs_covered(initial_obs: np.ndarray, option_repertoire: List[Opti
     return False
 
 
-def test(env: gym.Env) -> None:
+def test(env):
     print("----TEST----")
 
     with open(f"./saved_trainings/options.pickle", 'rb') as f:
-        option_repertoire: List[Option] = pickle.load(f)
+        option_repertoire = pickle.load(f)
 
     for o in option_repertoire:
         o.env = env
@@ -49,7 +48,7 @@ def test(env: gym.Env) -> None:
         evaluate(env, agent_over_options, option_repertoire, render=True)
 
 
-def evaluate(env: gym.Env, agent_over_options: MetaDQNAgent, option_repertoire: List[Option], render=False) -> None:
+def evaluate(env, agent_over_options, option_repertoire, render=False):
     print("\n---EVALUATING:")
 
     env_dict = env.reset()
@@ -74,7 +73,7 @@ def evaluate(env: gym.Env, agent_over_options: MetaDQNAgent, option_repertoire: 
     print(f"{total_reward}\n")
 
 
-def train(env: gym.Env, global_only=False) -> None:
+def train(env, global_only=False):
     print("----TRAIN----")
     start = time()
     hyperparams = read_hyperparams()
@@ -93,7 +92,7 @@ def train(env: gym.Env, global_only=False) -> None:
         option_without_init_classifier = goal_option
 
     agent_no = 2  # to match the option index
-    option_repertoire: List[Option] = [global_option]
+    option_repertoire = [global_option]
     agent_over_options = MetaDQNAgent(obs_dim=env.observation_space["observation"].shape[0],
                                       action_dim=len(option_repertoire))
 
@@ -188,7 +187,7 @@ def train(env: gym.Env, global_only=False) -> None:
     agent_over_options.save()
 
 
-def get_args() -> argparse.Namespace:
+def get_args():
     parser = argparse.ArgumentParser(description='options')
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--dynamic_goal', default=False, action='store_true')
@@ -199,7 +198,7 @@ def get_args() -> argparse.Namespace:
     return args
 
 
-def main() -> None:
+def main():
     args = get_args()
     env = gym.make("Point4Rooms-v1")
 

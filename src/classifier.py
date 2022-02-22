@@ -1,13 +1,11 @@
 import random
-from typing import List, Callable, Optional
 import numpy as np
 from sklearn.svm import OneClassSVM
 from sklearn.svm import SVC
 
 
 class Classifier:
-    def __init__(self, type_: str, for_global_option=False, for_goal_option=False,
-                 env_termination_checker: Optional[Callable[[np.ndarray], bool]] = None) -> None:
+    def __init__(self, type_, for_global_option=False, for_goal_option=False, env_termination_checker=None):
         assert type_ in ["init", "termination"], "type_ can be 'init' or 'termination'"
         assert not (for_global_option and for_goal_option), "it cant be both global and goal"
 
@@ -21,8 +19,8 @@ class Classifier:
 
         self.one_class_trained = False
         self.one_class_refined = False
-        self.good_examples_to_sample: List[np.ndarray] = []
-        self.initial_obs: Optional[np.ndarray] = None
+        self.good_examples_to_sample = []
+        self.initial_obs = None
 
         if self.type_ == "termination" and (self.for_global_option or self.for_goal_option):
             assert self.env_termination_checker is not None, \
@@ -30,7 +28,7 @@ class Classifier:
         elif self.type_ == "termination":
             assert self.env_termination_checker is None, "why provide termination checker for non global or goal"
 
-    def check(self, x: np.ndarray) -> bool:
+    def check(self, x):
         if self.type_ == "init" and self.for_global_option:
             return True
 
@@ -42,13 +40,13 @@ class Classifier:
 
         return self.one_class_svm.predict([x])[0] == 1
 
-    def sample(self) -> np.ndarray:
+    def sample(self):
         assert self.type_ == "termination", "sampling only valid for termination classifiers"
         assert self.one_class_trained, "at least one_class must be trained"
 
         return random.sample(self.good_examples_to_sample, k=1)[0]
 
-    def train_one_class(self, xs: List[np.ndarray], initial_obs: np.ndarray) -> None:
+    def train_one_class(self, xs, initial_obs):
         assert self.type_ == "init", "only init classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.one_class_trained, "one_class shouldn't be trained yet to train"
@@ -62,8 +60,7 @@ class Classifier:
         self.one_class_svm.fit(xs)
         self.one_class_trained = True
 
-    def train_two_class(self, good_examples_to_refine: List[np.ndarray],
-                        bad_examples_to_refine: List[np.ndarray]) -> None:
+    def train_two_class(self, good_examples_to_refine, bad_examples_to_refine):
         assert self.type_ == "init", "only init classifiers can be trained"
         assert not self.for_global_option, "global option classifiers cannot be trained"
         assert not self.one_class_refined, "one_class shouldn't be re-trained"

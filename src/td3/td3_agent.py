@@ -150,4 +150,5 @@ class TD3Agent:
         self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
 
+        # TODO: following shitty
         self.t += int(self.hyperparams["start_timesteps"] * 0.94)
