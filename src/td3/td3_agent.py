@@ -25,7 +25,6 @@ class TD3Agent:
                            action_bounds_high=action_bounds['high'])
         self.actor_target = deepcopy(self.actor)
 
-
         self.critic = Critic(self.obs_dim, action_dim=self.action_dim, goal_dim=self.goal_dim,
                              hidden_1=self.hyperparams['hidden_1'], hidden_2=self.hyperparams['hidden_2'])
         self.critic_target = deepcopy(self.critic)
@@ -41,6 +40,7 @@ class TD3Agent:
             "goal": {"shape": self.goal_dim}
         })
         self.total_it = 0
+        self.t = 0
 
     @staticmethod
     def _read_hyperparams():
@@ -49,17 +49,21 @@ class TD3Agent:
             return hyperparams
 
     def act(self, obs, goal, train_mode=True):
+        self.t += 1
+
         with torch.no_grad():
-            x = torch.from_numpy(np.concatenate([obs, goal])).float()
-            action = self.actor(x).numpy()
-
-        if train_mode:
-            action += self.action_bounds['high'] / 5 * np.random.randn(self.action_dim)
-            action = np.clip(action, self.action_bounds['low'], self.action_bounds['high'])
-
-            random_actions = np.random.uniform(low=self.action_bounds['low'], high=self.action_bounds['high'],
-                                               size=self.action_dim)
-            action += np.random.binomial(1, 0.3, 1)[0] * (random_actions - action)
+            input = torch.Tensor(np.concatenate([obs, goal]))
+            if not train_mode:
+                action = self.actor(input).numpy()
+            else:
+                if self.t < self.hyperparams["start_timesteps"]:
+                    action = np.random.uniform(low=self.action_bounds['low'], high=self.action_bounds['high'],
+                                               size=self.action_dim).astype(np.float32)
+                else:
+                    action = (
+                        self.actor(input).numpy()
+                        + np.random.normal(0, self.action_bounds['high'] * self.hyperparams["expl_noise"], size=self.action_dim).astype(np.float32)
+                    )
 
         action = np.clip(action, self.action_bounds['low'], self.action_bounds['high'])
         return action
@@ -88,14 +92,12 @@ class TD3Agent:
         self.rb.on_episode_end()
 
     def train(self):
-        try:
-            sample = self.rb.sample(self.hyperparams['batch_size'])
-        except ValueError:
-            # means not enough sample
+        if self.t < self.hyperparams["start_timesteps"]:
             return
 
         self.total_it += 1
 
+        sample = self.rb.sample(self.hyperparams['batch_size'])
         input = np.concatenate([sample['obs'], sample['goal']], axis=1)
         next_input = np.concatenate([sample['next_obs'], sample['goal']], axis=1)
         done = sample['reward'] + 1
@@ -147,3 +149,5 @@ class TD3Agent:
 
         self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
+
+        self.t += int(self.hyperparams["start_timesteps"] * 0.94)

@@ -8,13 +8,13 @@ from classifier import Classifier
 import gym
 
 
+# TODO: global bi sekilde diger option'lardan etkileniyor gibi??
 class Option:
     def __init__(self, name: str, budget: int, env: gym.Env, parent_option: Optional[Option],
                  min_examples_to_refine: int, req_num_to_create_init: int) -> None:
         self.name = name
         self.budget = budget
         self.env = env
-        self.parent_option = parent_option
         self.min_examples_to_refine = min_examples_to_refine
         self.req_num_to_create_init = req_num_to_create_init
 

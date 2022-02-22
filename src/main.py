@@ -98,7 +98,7 @@ def train(env: gym.Env, global_only=False) -> None:
                                       action_dim=len(option_repertoire))
 
     all_rewards = []
-    for episode_num in range(hyperparams['max_episodes']):
+    for episode_num in range(1, hyperparams['max_episodes']+1):
         env_dict = env.reset()
         done = False
         obs_history = []

@@ -28,6 +28,8 @@
         "gamma": 0.98,
         "tau": 0.05,
         "k_future": 4,
+        "expl_noise": 0.1,
+        "start_timesteps": 10000,
         "hidden_1": 128,
         "hidden_2": 128
     },
