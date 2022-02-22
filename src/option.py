@@ -127,7 +127,7 @@ class Option:
                 self.agent.store(exec_dict)
 
             for _ in range(self.budget):
-                self.agent.train()
+                self.agent.learn()
 
             if self.name != "global" and not self.init_classifier_refined:
                 if goal_achieved:

@@ -40,7 +40,6 @@ class TD3Agent:
             "goal": {"shape": self.goal_dim}
         })
         self.total_it = 0
-        self.t = 0
 
     @staticmethod
     def _read_hyperparams():
@@ -49,23 +48,15 @@ class TD3Agent:
             return hyperparams
 
     def act(self, obs, goal, train_mode=True):
-        self.t += 1
-
         with torch.no_grad():
             input = torch.Tensor(np.concatenate([obs, goal]))
-            if not train_mode:
-                action = self.actor(input).numpy()
-            else:
-                if self.t < self.hyperparams["start_timesteps"]:
-                    action = np.random.uniform(low=self.action_bounds['low'], high=self.action_bounds['high'],
-                                               size=self.action_dim).astype(np.float32)
-                else:
-                    action = (
-                        self.actor(input).numpy()
-                        + np.random.normal(0, self.action_bounds['high'] * self.hyperparams["expl_noise"], size=self.action_dim).astype(np.float32)
-                    )
+            action = self.actor(input).numpy()
 
-        action = np.clip(action, self.action_bounds['low'], self.action_bounds['high'])
+            if train_mode:
+                action += np.random.normal(0, self.action_bounds['high'] * self.hyperparams["expl_noise"],
+                                           size=self.action_dim)
+
+        action = np.clip(action, self.action_bounds['low'], self.action_bounds['high']).astype(np.float32)
         return action
 
     def store(self, episode_dict):
@@ -91,8 +82,8 @@ class TD3Agent:
 
         self.rb.on_episode_end()
 
-    def train(self):
-        if self.t < self.hyperparams["start_timesteps"]:
+    def learn(self):
+        if self.rb.get_stored_size() < self.hyperparams['batch_size']:
             return
 
         self.total_it += 1
@@ -149,6 +140,3 @@ class TD3Agent:
 
         self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
-
-        # TODO: following shitty
-        self.t += int(self.hyperparams["start_timesteps"] * 0.94)
